@@ -85,6 +85,23 @@ curl -u "YOUR_APP_ID:YOUR_SECRET" \
 az login
 ```
 
+### 1b. Set your subscription (if you have multiple)
+
+After logging in, Azure may default to the wrong subscription. Check which one is active:
+
+```bash
+az account show --query "{name:name, id:id}" --output table
+```
+
+If it's not the right one, list all subscriptions and switch:
+
+```bash
+az account list --output table
+az account set --subscription "your-subscription-name-or-id"
+```
+
+> **Tip:** If you're using a free Azure account, make sure you're on the correct subscription before creating any resources.
+
 ### 2. Create a Resource Group
 
 ```bash
@@ -95,12 +112,33 @@ az group create \
 
 ### 3. Create an App Service Plan
 
+**Choosing a tier — Free (F1) vs Basic (B1):**
+
+| | Free (F1) | Basic (B1) |
+|---|---|---|
+| **Cost** | $0/month | ~$13/month |
+| **CPU** | 60 min/day shared | Always-on dedicated |
+| **RAM** | 1 GB | 1.75 GB |
+| **Custom domain** | ❌ Not supported | ✅ Supported |
+| **Always on** | ❌ Cold starts | ✅ Warm |
+| **SSL** | ❌ | ✅ |
+
+> **Recommendation:** Use **F1** for testing and development. Upgrade to **B1** before a live event — cold starts on F1 can take 30+ seconds and custom domains (e.g. `fcstaff.yourchurch.org`) require B1 or higher.
+
 ```bash
+# B1 — recommended for live events
 az appservice plan create \
   --name relay-app-plan \
   --resource-group relay-app-rg \
   --sku B1 \
   --is-linux
+
+# F1 — free tier for testing only
+# az appservice plan create \
+#   --name relay-app-plan \
+#   --resource-group relay-app-rg \
+#   --sku F1 \
+#   --is-linux
 ```
 
 ### 4. Create the Web App
@@ -249,28 +287,52 @@ Conference scanner running at http://localhost:8080
 
 ## Domain & SSL (Cloudflare)
 
-### 1. Add a CNAME record
+### 1. Verify you're on B1 or higher
+
+Custom domains are **not available on the free F1 tier**. You must be on B1 or higher. Check your current tier:
+
+```bash
+az appservice plan show \
+  --name relay-app-plan \
+  --resource-group relay-app-rg \
+  --query "sku.name" --output tsv
+```
+
+If it returns `F1`, upgrade first:
+
+```bash
+az appservice plan update \
+  --name relay-app-plan \
+  --resource-group relay-app-rg \
+  --sku B1
+```
+
+> Upgrading from F1 to B1 costs ~$13/month. You can downgrade back to F1 after the event if needed.
+
+### 2. Add a CNAME record
 
 In your Cloudflare DNS dashboard, add:
 
 | Type | Name | Target | Proxy |
 |---|---|---|---|
-| CNAME | `fcstaff` | `your-app.azurewebsites.net` | ✅ Proxied |
+| CNAME | `fcstaff` | `relay-app.azurewebsites.net` | ✅ Proxied |
 
-### 2. Add custom domain in Azure
+### 3. Add custom domain in Azure
 
 ```bash
 az webapp config hostname add \
-  --webapp-name your-app-name \
+  --webapp-name relay-app \
   --resource-group relay-app-rg \
   --hostname fcstaff.yourdomain.org
 ```
 
-### 3. Set SSL mode in Cloudflare
+> **Note:** If you get a DNS verification error, Azure may require a TXT record to prove domain ownership. The required value appears in the Azure Portal under **Custom domains → Add custom domain**.
+
+### 4. Set SSL mode in Cloudflare
 
 In Cloudflare → SSL/TLS → Overview, set to **Full** (not Full Strict).
 
-### 4. Verify
+### 5. Verify
 
 ```bash
 curl https://fcstaff.yourdomain.org/api/health
