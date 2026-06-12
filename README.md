@@ -17,7 +17,7 @@ Built in a single intensive development session and deployed live to production.
 
 ## Screenshots
 
-> *Screenshots coming — add your own from the event here*
+> *Screenshots coming*
 
 | Staff Guide | Badge Scanner | Walk-ins Tab |
 |---|---|---|
