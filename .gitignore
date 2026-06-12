@@ -19,4 +19,3 @@ npm-debug.log*
 
 # Azure
 .azure/
-.wrangler/

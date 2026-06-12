@@ -89,7 +89,7 @@ az login
 
 ```bash
 az group create \
-  --name freedom-crusade-rg \
+  --name relay-app-rg \
   --location eastus
 ```
 
@@ -97,8 +97,8 @@ az group create \
 
 ```bash
 az appservice plan create \
-  --name freedom-crusade-plan \
-  --resource-group freedom-crusade-rg \
+  --name relay-app-plan \
+  --resource-group relay-app-rg \
   --sku B1 \
   --is-linux
 ```
@@ -108,8 +108,8 @@ az appservice plan create \
 ```bash
 az webapp create \
   --name your-app-name \
-  --resource-group freedom-crusade-rg \
-  --plan freedom-crusade-plan \
+  --resource-group relay-app-rg \
+  --plan relay-app-plan \
   --runtime "NODE:22-lts"
 ```
 
@@ -118,7 +118,7 @@ az webapp create \
 ```bash
 az storage account create \
   --name yourstoragename \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --location eastus \
   --sku Standard_LRS \
   --kind StorageV2
@@ -129,7 +129,7 @@ Get the connection string:
 ```bash
 az storage account show-connection-string \
   --name yourstoragename \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --query connectionString \
   --output tsv
 ```
@@ -143,7 +143,7 @@ Set all environment variables in Azure (never in code):
 ```bash
 az webapp config appsettings set \
   --name your-app-name \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --settings \
     PCO_APP_ID="your_pco_app_id" \
     PCO_SECRET="your_pco_secret" \
@@ -168,8 +168,8 @@ az webapp config appsettings set \
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/yourusername/freedom-crusade-scanner.git
-cd freedom-crusade-scanner
+git clone https://github.com/yourusername/relay-app.git
+cd relay-app
 ```
 
 ### 2. Install dependencies
@@ -212,7 +212,7 @@ zip -r deploy.zip . \
 
 az webapp deploy \
   --name your-app-name \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --src-path deploy.zip \
   --type zip \
   --async true
@@ -233,7 +233,7 @@ curl https://your-app.azurewebsites.net/api/health
 # Tail logs
 az webapp log tail \
   --name your-app-name \
-  --resource-group freedom-crusade-rg
+  --resource-group relay-app-rg
 ```
 
 A successful startup shows:
@@ -262,7 +262,7 @@ In your Cloudflare DNS dashboard, add:
 ```bash
 az webapp config hostname add \
   --webapp-name your-app-name \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --hostname fcstaff.yourdomain.org
 ```
 
@@ -310,7 +310,7 @@ In Planning Center:
 ```bash
 az webapp config appsettings set \
   --name your-app-name \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --settings \
     PCO_FORM_ID="new_form_id" \
     PCO_NOTE_CATEGORY_ID="new_category_id" \
@@ -353,7 +353,7 @@ In `public/index.html` and `public/guide.html`, update:
 # Create new token, then update in Azure:
 az webapp config appsettings set \
   --name your-app-name \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --settings \
     PCO_APP_ID="new_app_id" \
     PCO_SECRET="new_secret"
@@ -397,7 +397,7 @@ Check the connection string is set correctly:
 ```bash
 az webapp config appsettings list \
   --name your-app-name \
-  --resource-group freedom-crusade-rg \
+  --resource-group relay-app-rg \
   --query "[?name=='AZURE_STORAGE_CONNECTION_STRING']"
 ```
 The startup log should show `✓ Azure Table Storage connected`.
