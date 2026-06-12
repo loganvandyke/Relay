@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relay — Print Walk-In Badges</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f7f4; padding: 1.5rem; }
+    h1 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+    p.sub { font-size: 13px; color: #6b6b67; margin-bottom: 1.25rem; }
+    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    input { border: 0.5px solid rgba(0,0,0,0.22); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; background: #fff; }
+    button { background: #1a1a18; color: #f8f7f4; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 500; }
+    button:hover { opacity: 0.85; }
+    .btn-sec { background: #fff; color: #1a1a18; border: 0.5px solid rgba(0,0,0,0.22); }
+
+    /* Screen grid */
+    #badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+    .badge { border: 1px solid #ccc; border-radius: 10px; padding: 10px 8px; text-align: center; background: #fff; }
+    .badge-code { font-size: 13px; font-weight: 700; margin-top: 6px; color: #1a1a18; letter-spacing: 0.05em; }
+    .badge-event { font-size: 10px; color: #a0a09c; margin-top: 2px; }
+
+    /* Print styles — 5 per row, auto-scaling QR codes */
+    @media print {
+      * { box-sizing: border-box; }
+      body { background: white; padding: 0; margin: 0; }
+      h1, p.sub, .controls { display: none !important; }
+      #badge-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+        padding: 5px;
+        width: 100%;
+      }
+      .badge {
+        border: 0.5px solid #bbb;
+        border-radius: 4px;
+        padding: 5px 3px;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        overflow: hidden;
+      }
+      /* Make QR images fill the column width */
+      .badge canvas,
+      .badge img {
+        width: 100% !important;
+        height: auto !important;
+        display: block;
+      }
+      .badge-code { font-size: 10px; margin-top: 3px; }
+      .badge-event { font-size: 8px; margin-top: 1px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Walk-In Badge Sheet</h1>
+  <p class="sub">Jesus is Lord Freedom Crusade — pre-printed WI badges for walk-in attendees</p>
+
+  <div class="controls">
+    <div>
+      <label style="font-size:12px;color:#6b6b67;display:block;margin-bottom:3px;">Start number</label>
+      <input id="start-num" type="number" value="1" min="1" max="999" style="width:80px;" />
+    </div>
+    <div>
+      <label style="font-size:12px;color:#6b6b67;display:block;margin-bottom:3px;">How many badges</label>
+      <input id="count" type="number" value="50" min="1" max="200" style="width:80px;" />
+    </div>
+    <div style="align-self:flex-end;">
+      <button onclick="generate()">Generate</button>
+    </div>
+    <div style="align-self:flex-end;">
+      <button class="btn-sec" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+
+  <div id="badge-grid"></div>
+
+  <script>
+    let printBtn = document.querySelector('.btn-sec');
+
+    function generate() {
+      const start = parseInt(document.getElementById('start-num').value) || 1;
+      const count = Math.min(parseInt(document.getElementById('count').value) || 50, 200);
+      const grid = document.getElementById('badge-grid');
+      grid.innerHTML = '';
+      if (printBtn) { printBtn.disabled = true; printBtn.textContent = '⏳ Generating...'; }
+
+      // Build all badge divs first
+      const codes = [];
+      for (let i = 0; i < count; i++) {
+        const num = start + i;
+        const code = 'WI-' + String(num).padStart(3, '0');
+        codes.push(code);
+
+        const div = document.createElement('div');
+        div.className = 'badge';
+
+        const qrDiv = document.createElement('div');
+        qrDiv.id = 'qr-' + code;
+        div.appendChild(qrDiv);
+
+        const codeEl = document.createElement('p');
+        codeEl.className = 'badge-code';
+        codeEl.textContent = code;
+        div.appendChild(codeEl);
+
+        const eventEl = document.createElement('p');
+        eventEl.className = 'badge-event';
+        eventEl.textContent = 'Freedom Crusade';
+        div.appendChild(eventEl);
+
+        grid.appendChild(div);
+      }
+
+      // Generate all QR codes
+      codes.forEach(code => {
+        try {
+          new QRCode(document.getElementById('qr-' + code), {
+            text: code,
+            width: 80,
+            height: 80,
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch(e) {}
+      });
+
+      // Wait for all canvases to render before enabling print
+      // QRCode.js renders synchronously so a short RAF is enough
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (printBtn) { printBtn.disabled = false; printBtn.textContent = '🖨 Print'; }
+        });
+      });
+    }
+
+    // Auto-print support: add ?print to URL to generate and print immediately
+    // e.g. /print-wi-badges.html?print=1&start=1&count=50
+    function checkAutoPrint() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('start')) document.getElementById('start-num').value = params.get('start');
+      if (params.get('count')) document.getElementById('count').value = params.get('count');
+      generate();
+      if (params.get('print') === '1') {
+        requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+      }
+    }
+
+    checkAutoPrint();
+  </script>
+</body>
+</html>

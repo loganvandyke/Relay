@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj4KICA8cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgcng9IjQ0IiBmaWxsPSIjMEQxMTE3Ii8+CiAgPHBhdGggZD0iTTcyIDY4TDExNCAxMDBMNzIgMTMyIiBzdHJva2U9IiMwMEM5QTciIHN0cm9rZS13aWR0aD0iMTMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIvPgogIDxwYXRoIGQ9Ik05NCA2OEwxMzYgMTAwTDk0IDEzMiIgc3Ryb2tlPSIjMDBDOUE3IiBzdHJva2Utd2lkdGg9IjEzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLA · System Status</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f3ef;
+      color: #1a1a1a;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 1.5rem 1rem;
+    }
+    .max { max-width: 600px; margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    header h1 { font-size: 17px; font-weight: 600; }
+    header p { font-size: 12px; color: #6b6b67; }
+    .btn {
+      background: #1a1a18; color: #fff; border: none;
+      border-radius: 8px; padding: 7px 16px; font-size: 13px;
+      font-family: inherit; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 6px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-sm {
+      background: #fff; color: #1a1a18;
+      border: 0.5px solid rgba(0,0,0,0.2);
+      border-radius: 6px; padding: 5px 12px; font-size: 12px;
+      font-family: inherit; cursor: pointer;
+      text-decoration: none; display: inline-flex;
+      align-items: center; gap: 5px;
+    }
+
+    .card {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,0.1);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.08);
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .card-title i { font-size: 16px; }
+
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot-ok { background: #27ae60; box-shadow: 0 0 0 3px rgba(39,174,96,0.2); }
+    .dot-error { background: #e74c3c; box-shadow: 0 0 0 3px rgba(231,76,60,0.2); }
+    .dot-warn { background: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.2); }
+    .dot-loading { background: #bbb; animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 16px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.06);
+      font-size: 13px;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: #6b6b67; }
+    .stat-value { font-weight: 500; font-family: 'SF Mono', 'Menlo', monospace; font-size: 12px; }
+    .stat-value.ok { color: #27ae60; }
+    .stat-value.error { color: #e74c3c; }
+    .stat-value.warn { color: #d68910; }
+
+    .error-box {
+      margin: 0 16px 12px;
+      background: #fdf2f2;
+      border: 0.5px solid #f5c6c6;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #c0392b;
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    .loading-overlay {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6b6b67;
+    }
+
+    .loading-overlay i { font-size: 28px; opacity: 0.4; display: block; margin-bottom: 8px; }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: #a0a09c;
+      margin-top: 1.5rem;
+    }
+
+    footer a { color: #2e86c1; text-decoration: none; }
+
+    #last-refreshed {
+      font-size: 11px;
+      color: #a0a09c;
+    }
+  </style>
+</head>
+<body>
+<div class="max">
+
+  <header>
+    <div>
+      <h1><i class="ti ti-activity-heartbeat" aria-hidden="true"></i> System Status</h1>
+      <p>CLA · Relay · <span id="last-refreshed">Loading...</span></p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <a href="/scanner" class="btn-sm"><i class="ti ti-arrow-left" aria-hidden="true"></i> Scanner</a>
+      <button class="btn" onclick="refresh()"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</button>
+    </div>
+  </header>
+
+  <div id="status-content">
+    <div class="loading-overlay">
+      <i class="ti ti-loader-2" aria-hidden="true"></i>
+      Checking systems...
+    </div>
+  </div>
+
+  <footer>
+    Made with care by <a href="https://logvan.com" target="_blank">Logan VanDyke</a>
+  </footer>
+
+</div>
+<script>
+  function fmt(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString();
+  }
+
+  function fmtUptime(secs) {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  function dot(ok, loading) {
+    if (loading) return '<span class="status-dot dot-loading"></span>';
+    return ok
+      ? '<span class="status-dot dot-ok"></span>'
+      : '<span class="status-dot dot-error"></span>';
+  }
+
+  function badge(ok, loading) {
+    if (loading) return '<span style="font-size:12px;color:#bbb;">Checking...</span>';
+    return ok
+      ? '<span style="font-size:12px;font-weight:500;color:#27ae60;"><i class="ti ti-check"></i> Operational</span>'
+      : '<span style="font-size:12px;font-weight:500;color:#e74c3c;"><i class="ti ti-x"></i> Error</span>';
+  }
+
+  async function refresh() {
+    document.getElementById('last-refreshed').textContent = 'Refreshing...';
+    document.getElementById('status-content').innerHTML = `
+      <div class="loading-overlay">
+        <i class="ti ti-loader-2" aria-hidden="true"></i>
+        Checking systems...
+      </div>`;
+
+    try {
+      const res = await fetch('/api/status');
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login.html';
+          return;
+        }
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const d = await res.json();
+      render(d);
+    } catch(e) {
+      document.getElementById('status-content').innerHTML = `
+        <div class="card">
+          <div style="padding:1rem;text-align:center;color:#e74c3c;">
+            <i class="ti ti-alert-circle" style="font-size:24px;display:block;margin-bottom:6px;"></i>
+            Could not reach status endpoint: ${e.message}
+          </div>
+        </div>`;
+      document.getElementById('last-refreshed').textContent = 'Failed';
+    }
+  }
+
+  function render(d) {
+    document.getElementById('last-refreshed').textContent = 'Last checked: ' + fmt(d.app.timestamp);
+
+    const pcoError = d.pco.error ? `<div class="error-box">${d.pco.error}</div>` : '';
+    const storageError = d.storage.error ? `<div class="error-box">${d.storage.error}</div>` : '';
+
+    document.getElementById('status-content').innerHTML = `
+
+      <!-- App -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="ti ti-server" aria-hidden="true"></i>
+            Application
+          </div>
+          ${badge(d.app.ok)}
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span class="stat-value ok">Running</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Uptime</span>
+          <span class="stat-value">${fmtUptime(d.app.uptime_seconds)}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Node.js</span>
+          <span class="stat-value">${d.app.node_version}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Checked at</span>
+          <span class="stat-value">${fmt(d.app.timestamp)}</span>
+        </div>
+      </div>
+
+      <!-- PCO -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            ${dot(d.pco.ok)}
+            <i class="ti ti-cloud" aria-hidden="true"></i>
+            Planning Center
+          </div>
+          ${badge(d.pco.ok)}
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Connection</span>
+          <span class="stat-value ${d.pco.ok ? 'ok' : 'error'}">${d.pco.ok ? 'Connected' : 'Failed'}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Credentials</span>
+          <span class="stat-value ${d.pco.configured ? 'ok' : 'error'}">${d.pco.configured ? 'Configured' : 'Missing'}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Form ID</span>
+          <span class="stat-value">${d.pco.form_id || '—'}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Note Category</span>
+          <span class="stat-value">${d.pco.note_category_id || '—'}</span>
+        </div>
+        ${d.pco.response_ms ? `
+        <div class="stat-row">
+          <span class="stat-label">Response time</span>
+          <span class="stat-value">${d.pco.response_ms}ms</span>
+        </div>` : ''}
+        <div class="stat-row">
+          <span class="stat-label">Last checked</span>
+          <span class="stat-value">${fmt(d.pco.last_check)}</span>
+        </div>
+        ${pcoError}
+      </div>
+
+      <!-- Azure Table Storage -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            ${dot(d.storage.ok)}
+            <i class="ti ti-database" aria-hidden="true"></i>
+            Azure Table Storage
+          </div>
+          ${badge(d.storage.ok)}
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Connection</span>
+          <span class="stat-value ${d.storage.ok ? 'ok' : 'error'}">${d.storage.ok ? 'Connected' : 'Failed'}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Configured</span>
+          <span class="stat-value ${d.storage.configured ? 'ok' : 'warn'}">${d.storage.configured ? 'Yes' : 'No — using memory fallback'}</span>
+        </div>
+        ${d.storage.badge_count !== null ? `
+        <div class="stat-row">
+          <span class="stat-label">Badges linked</span>
+          <span class="stat-value">${d.storage.badge_count}</span>
+        </div>` : ''}
+        ${d.storage.offline_count !== null ? `
+        <div class="stat-row">
+          <span class="stat-label">Offline captures pending</span>
+          <span class="stat-value ${d.storage.offline_count > 0 ? 'warn' : ''}">${d.storage.offline_count}</span>
+        </div>` : ''}
+        ${d.storage.response_ms ? `
+        <div class="stat-row">
+          <span class="stat-label">Response time</span>
+          <span class="stat-value">${d.storage.response_ms}ms</span>
+        </div>` : ''}
+        <div class="stat-row">
+          <span class="stat-label">Last checked</span>
+          <span class="stat-value">${fmt(d.storage.last_check)}</span>
+        </div>
+        ${storageError}
+      </div>
+
+      <!-- Active Users -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="ti ti-users" aria-hidden="true"></i>
+            Active users
+          </div>
+          <span style="font-size:12px;color:var(--text-muted);" id="session-count"></span>
+        </div>
+        <div id="sessions-list">
+          <div style="padding:12px 16px;font-size:13px;color:#6b6b67;">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Audit Log -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="ti ti-history" aria-hidden="true"></i>
+            Recent audit log
+          </div>
+          <button onclick="loadAudit()" class="btn-sm">
+            <i class="ti ti-refresh" aria-hidden="true"></i> Refresh
+          </button>
+        </div>
+        <div id="audit-list">
+          <div style="padding:12px 16px;font-size:13px;color:#6b6b67;">Loading...</div>
+        </div>
+      </div>
+    `;
+
+    loadAudit();
+    renderSessions(d.sessions);
+  }
+
+  function renderSessions(sessions) {
+    if (!sessions) return;
+    const list = document.getElementById('sessions-list');
+    const count = document.getElementById('session-count');
+    if (count) count.textContent = `${sessions.active} active`;
+    if (!sessions.users || !sessions.users.length) {
+      list.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#6b6b67;">No active sessions.</div>';
+      return;
+    }
+
+    const UA_ICON = ua => {
+      if (!ua) return '🖥';
+      if (/iPhone|iPad|iOS/i.test(ua)) return '📱';
+      if (/Android/i.test(ua)) return '📱';
+      if (/Mac/i.test(ua)) return '💻';
+      if (/Windows/i.test(ua)) return '🖥';
+      return '🌐';
+    };
+
+    list.innerHTML = sessions.users.map(s => `
+      <div class="stat-row" style="flex-direction:column;align-items:flex-start;gap:2px;padding:10px 16px;">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-size:14px;font-weight:500;">
+            ${UA_ICON(s.userAgent)} ${s.name || 'Unknown'}
+          </span>
+          <span style="font-size:11px;color:#6b6b67;">Last seen ${fmt(s.lastSeen)}</span>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:#6b6b67;font-family:monospace;">
+            <i class="ti ti-network" style="font-size:11px;"></i> ${(s.ip || '').replace(/:\d+$/, '')}
+          </span>
+          ${s.phone ? `<span style="font-size:12px;color:#6b6b67;">📞 ${s.phone}</span>` : ''}
+          <span style="font-size:11px;color:#a0a09c;">Login: ${fmt(s.loginAt)}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  async function loadAudit() {
+    const el = document.getElementById('audit-list');
+    if (!el) return;
+    try {
+      const r = await fetch('/api/audit?limit=100');
+      if (!r.ok) return;
+      const d = await r.json();
+      const logs = d.logs || [];
+      if (!logs.length) {
+        el.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#6b6b67;">No audit entries yet.</div>';
+        return;
+      }
+      const ACTION_ICONS = {
+        followup_created: '➕',
+        followup_updated: '✏️',
+        assignment_changed: '👤',
+        status_changed: '🔄',
+        contact_logged: '📞',
+      };
+      el.innerHTML = logs.map(l => {
+        let after = {};
+        try { after = JSON.parse(l.after || '{}'); } catch(e) {}
+        let detail = '';
+        if (l.action === 'assignment_changed') detail = after.assigned_to ? `→ ${after.assigned_to}` : '→ Unassigned';
+        else if (l.action === 'status_changed') detail = after.status || '';
+        else if (l.action === 'contact_logged') detail = `${after.method || ''} · ${after.outcome || ''}`;
+        const ACTION_LABELS = {
+          followup_created: 'Follow-up created',
+          followup_updated: 'Follow-up updated',
+          assignment_changed: 'Assignment changed',
+          status_changed: 'Status changed',
+          contact_logged: 'Contact logged',
+          campus_assigned: 'Campus assigned',
+        };
+        const actionLabel = ACTION_LABELS[l.action] || l.action;
+        return `<div class="stat-row">
+          <div style="flex:1;">
+            <span style="font-size:13px;">${ACTION_ICONS[l.action]||'•'} <strong>${actionLabel}</strong>
+              ${detail ? `<span style="color:#6b6b67;"> — ${detail}</span>` : ''}
+            </span>
+            <div style="font-size:11px;color:#a0a09c;margin-top:2px;">by ${l.changed_by||'?'} · ${l.person_name || ('PCO ' + (l.entity_id||''))}</div>
+          </div>
+          <span class="stat-value" style="font-size:11px;white-space:nowrap;margin-left:8px;">${fmt(l.timestamp)}</span>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      el.innerHTML = `<div style="padding:12px 16px;font-size:13px;color:#c0392b;">${e.message}</div>`;
+    }
+  }
+
+  // Auto-refresh every 60 seconds
+  refresh();
+  setInterval(refresh, 60000);
+</script>
+</body>
+</html>

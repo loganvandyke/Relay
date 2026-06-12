@@ -1,0 +1,3338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relay</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css" />
+  <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f7f4; --surface: #ffffff; --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.22); --text: #1a1a18; --text-muted: #6b6b67;
+      --text-faint: #a0a09c; --radius: 8px; --radius-lg: 12px;
+      --accent-bg: #eaf3de; --accent-text: #3b6d11;
+      --info-bg: #e6f1fb; --info-text: #185fa5;
+      --danger-bg: #fcebeb; --danger-text: #a32d2d;
+      --warning-bg: #faeeda; --warning-text: #854f0b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a; --surface: #252523; --border: rgba(255,255,255,0.1);
+        --border-strong: rgba(255,255,255,0.22); --text: #f0efe8; --text-muted: #a0a09c;
+        --text-faint: #666662; --accent-bg: #173404; --accent-text: #c0dd97;
+        --info-bg: #042c53; --info-text: #b5d4f4;
+        --danger-bg: #501313; --danger-text: #f7c1c1;
+        --warning-bg: #412402; --warning-text: #fac775;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.5; }
+    header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
+    header h1 { font-size: 16px; font-weight: 500; flex: 1; }
+    #conn-status { font-size: 12px; padding: 3px 10px; border-radius: var(--radius); background: var(--warning-bg); color: var(--warning-text); }
+    #conn-status.ok { background: var(--accent-bg); color: var(--accent-text); }
+    .main { max-width: 720px; margin: 0 auto; padding: 1.25rem 1rem; }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      margin-bottom: 1.25rem;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--surface);
+    }
+    .tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 10px 4px 8px;
+      font-size: 11px;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -0.5px;
+      font-family: inherit;
+      line-height: 1.2;
+      min-height: 56px;
+    }
+    .tab i { font-size: 20px; }
+    .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+    .tab.active i { color: var(--text); }
+    .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
+    .label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    input, textarea, select { width: 100%; background: var(--surface); color: var(--text); border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-family: inherit; font-size: 14px; padding: 8px 12px; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--info-text); }
+    .btn { background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); padding: 9px 20px; font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 500; }
+    .btn:hover { opacity: 0.85; }
+    .btn-sec { background: var(--surface); color: var(--text); border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 8px 16px; font-size: 14px; font-family: inherit; cursor: pointer; }
+    .btn-sec:hover { background: var(--bg); }
+    .icon-btn { background: var(--surface); color: var(--text-muted); border: 0.5px solid var(--border); border-radius: var(--radius); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; flex-shrink: 0; }
+    .icon-btn:hover { color: var(--text); background: var(--bg); }
+    .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--info-bg); color: var(--info-text); display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 15px; flex-shrink: 0; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-sm { width: 34px; height: 34px; font-size: 12px; }
+    .badge { font-size: 11px; padding: 3px 9px; border-radius: var(--radius); display: inline-block; font-weight: 500; }
+    .badge-info { background: var(--info-bg); color: var(--info-text); }
+    .badge-success { background: var(--accent-bg); color: var(--accent-text); }
+    .badge-warn { background: var(--warning-bg); color: var(--warning-text); }
+    .note-item { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+    .note-item:last-child { border-bottom: none; }
+    .note-time { font-size: 11px; color: var(--text-faint); margin-bottom: 3px; }
+    .note-text { font-size: 14px; line-height: 1.55; }
+    .attendee-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+    .attendee-row:last-child { border-bottom: none; }
+    .attendee-row:hover { opacity: 0.7; }
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 14px; }
+    .empty-state i { font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.4; }
+    .alert { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 10px; }
+    .alert-danger { background: var(--danger-bg); color: var(--danger-text); }
+    .alert-success { background: var(--accent-bg); color: var(--accent-text); }
+    .alert-info { background: var(--info-bg); color: var(--info-text); }
+    #cam-area video { width: 100%; border-radius: var(--radius); max-height: 240px; background: #000; display: block; }
+    .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid var(--border); border-top-color: var(--text-muted); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .detail-row { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; }
+    .detail-row i { font-size: 15px; flex-shrink: 0; }
+    .detail-row span { color: var(--text); }
+    .response-row { display: flex; gap: 12px; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+    .response-row:last-child { border-bottom: none; }
+    .response-label { color: var(--text-muted); min-width: 120px; flex-shrink: 0; }
+    .response-value { color: var(--text); }
+    .suggest-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; cursor: pointer; border-radius: var(--radius); border: 0.5px solid var(--border); margin-bottom: 4px; background: var(--surface); }
+    .suggest-item:hover { background: var(--bg); }
+
+    /* ── Print styles ─────────────────────────────── */
+    @media print {
+      header, .tabs, #form-selector-card, #view-scan, #view-all .card > *:not(#print-grid) { display: none !important; }
+      #view-all { display: block !important; }
+      body { background: white; }
+      #print-grid { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0; visibility: visible !important; }
+      .print-badge { border: 1px solid #ccc; border-radius: 8px; padding: 14px 10px; text-align: center; page-break-inside: avoid; }
+      .print-badge-name { font-size: 15px; font-weight: 600; margin-top: 8px; color: #000; }
+      .print-badge-sub { font-size: 11px; color: #666; margin-top: 2px; }
+    }
+
+    /* Force light mode override */
+    body.force-light {
+      --bg: #f8f7f4; --surface: #ffffff; --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.22); --text: #1a1a18; --text-muted: #6b6b67;
+      --text-faint: #a0a09c;
+      --accent-bg: #eaf3de; --accent-text: #3b6d11;
+      --info-bg: #e6f1fb; --info-text: #185fa5;
+      --danger-bg: #fcebeb; --danger-text: #a32d2d;
+      --warning-bg: #faeeda; --warning-text: #854f0b;
+    }
+    /* Force dark mode override */
+    body.force-dark {
+      --bg: #1c1c1a; --surface: #252523; --border: rgba(255,255,255,0.1);
+      --border-strong: rgba(255,255,255,0.22); --text: #f0efe8; --text-muted: #a0a09c;
+      --text-faint: #666662; --accent-bg: #173404; --accent-text: #c0dd97;
+      --info-bg: #042c53; --info-text: #b5d4f4;
+      --danger-bg: #501313; --danger-text: #f7c1c1;
+      --warning-bg: #412402; --warning-text: #fac775;
+    }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 1rem;
+    }
+    .modal-backdrop.hidden { display: none; }
+    .modal {
+      background: var(--surface); border-radius: var(--radius-lg);
+      border: 0.5px solid var(--border); padding: 1.75rem 1.5rem;
+      width: 100%; max-width: 380px;
+    }
+    .modal h2 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+    .modal p  { font-size: 14px; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.55; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      header { padding: 0 0.75rem; gap: 6px; height: auto; min-height: 52px; flex-wrap: nowrap; }
+      header h1 { font-size: 14px; }
+
+      /* Shrink recorder button */
+      #recorder-display { font-size: 11px; max-width: 80px; }
+      /* Hide text labels on icon buttons in header */
+      #theme-btn, #logout-btn { width: 28px; height: 28px; }
+      #conn-status { font-size: 11px; padding: 2px 7px; white-space: nowrap; }
+      .main { padding: 1rem 0.75rem; }
+      .card { padding: 0.875rem 1rem; }
+      .tabs .tab { font-size: 11px; min-height: 52px; }
+      .tabs .tab i { font-size: 18px; }
+      .avatar { width: 38px; height: 38px; font-size: 13px; }
+      .btn { width: 100%; text-align: center; padding: 11px; font-size: 15px; }
+      textarea { font-size: 16px; }
+      input[type="text"], input[type="email"], input[type="tel"], select { font-size: 16px; }
+      .response-label { min-width: 90px; }
+      #qr-wrap { transform: scale(0.85); transform-origin: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Home screen install banner -->
+<div id="install-banner" style="display:none; background:var(--info-bg); border-bottom:0.5px solid var(--border); padding:10px 1.25rem;">
+  <div style="max-width:720px; margin:0 auto; display:flex; align-items:center; gap:10px;">
+    <i class="ti ti-device-mobile" aria-hidden="true" style="font-size:20px; color:var(--info-text); flex-shrink:0;"></i>
+    <div style="flex:1;">
+      <p style="font-size:13px; font-weight:500; color:var(--info-text);" id="install-title">Add to your home screen</p>
+      <p style="font-size:12px; color:var(--info-text); opacity:0.85;" id="install-instructions"></p>
+    </div>
+    <button onclick="dismissInstallBanner()" aria-label="Dismiss"
+      style="background:none; border:none; cursor:pointer; color:var(--info-text); font-size:18px; flex-shrink:0; padding:4px;">
+      <i class="ti ti-x" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
+
+<header>
+  <a href="/guide.html" title="Staff guide" style="color:var(--text-muted);display:flex;align-items:center;flex-shrink:0;"><i class="ti ti-home" aria-hidden="true" style="font-size:20px;"></i></a>
+  <h1 id="app-title" style="font-size:15px;font-weight:500;flex:1;">Relay</h1>
+  <button onclick="openRecorderModal()" title="Change your name"
+    style="display:flex;align-items:center;gap:5px;background:var(--surface);border:0.5px solid var(--border);
+           border-radius:var(--radius);padding:4px 10px;cursor:pointer;flex-shrink:0;max-width:160px;">
+    <i class="ti ti-user" aria-hidden="true" style="font-size:14px;color:var(--text-faint);flex-shrink:0;"></i>
+    <span id="recorder-display" style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      Set your name
+    </span>
+  </button>
+  <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode" style="width:32px;height:32px;border:none;flex-shrink:0;"><i class="ti ti-sun" id="theme-icon" aria-hidden="true"></i></button>
+  <button class="icon-btn" id="logout-btn" onclick="logout()" title="Sign out" style="width:32px;height:32px;border:none;flex-shrink:0;"><i class="ti ti-logout" aria-hidden="true"></i></button>
+  <span id="conn-status">Connecting...</span>
+</header>
+<div style="background:var(--accent-bg);border-bottom:0.5px solid var(--border);
+            padding:5px 1.25rem;text-align:center;">
+  <p style="font-size:12px;color:var(--accent-text);font-weight:500;letter-spacing:0.01em;">
+    Jesus is Lord Freedom Crusade
+  </p>
+</div>
+
+<div class="main">
+
+  <!-- Form selector (hidden when locked) -->
+  <div class="card" id="form-selector-card">
+    <p class="label">Planning Center form</p>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <select id="form-select" style="flex:1;" onchange="onFormChange()">
+        <option value="">— select a form —</option>
+      </select>
+      <button class="icon-btn" onclick="loadForms()" title="Refresh"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+    </div>
+    <p id="form-status" style="font-size:12px; color:var(--text-faint); margin-top:6px;"></p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-scan" onclick="showTab('scan')"><i class="ti ti-scan" aria-hidden="true"></i> Scan</button>
+    <button class="tab" id="tab-all" onclick="showTab('all')"><i class="ti ti-users" aria-hidden="true"></i> Attendees</button>
+    <button class="tab" id="tab-walkin" onclick="showTab('walkin')" style="white-space:nowrap;"><i class="ti ti-user-plus" aria-hidden="true"></i> Walk-ins</button>
+    <button class="tab" id="tab-dash" onclick="showTab('dash')"><i class="ti ti-chart-bar" aria-hidden="true"></i> Dashboard</button>
+    <button class="tab" id="tab-sched" onclick="showTab('sched')"><i class="ti ti-calendar-event" aria-hidden="true"></i> Schedule</button>
+    <button class="tab" id="tab-followup" onclick="showTab('followup')"><i class="ti ti-heart-handshake" aria-hidden="true"></i> Follow-up<span id="fu-badge" style="display:none;background:var(--danger-text);color:#fff;border-radius:10px;font-size:9px;padding:1px 5px;margin-left:4px;vertical-align:middle;font-weight:700;"></span></button>
+  </div>
+
+  <!-- SCAN TAB -->
+  <div id="view-scan">
+    <div class="card">
+      <p class="label">Scan badge QR or search by name</p>
+      <div style="display:flex; gap:8px;">
+        <input id="scan-input" type="text" placeholder="Type a name or scan QR..." autocomplete="off"
+          oninput="onSearchInput()" onkeydown="if(event.key==='Enter') doLookup()" style="flex:1; height:40px;" />
+        <button class="icon-btn" onclick="toggleCamera()" title="Camera"><i class="ti ti-camera" aria-hidden="true"></i></button>
+      </div>
+      <div id="search-suggestions" style="margin-top:8px;"></div>
+      <div id="cam-area" style="display:none; margin-top:12px;">
+        <video id="qr-video" playsinline autoplay muted style="width:100%;border-radius:var(--radius);max-height:260px;background:#000;display:block;object-fit:cover;"></video>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:6px;"><i class="ti ti-scan" aria-hidden="true"></i> Point at the QR code on the badge</p>
+        <button class="btn-sec" onclick="stopCamera()" style="margin-top:8px; font-size:13px;">Stop camera</button>
+      </div>
+    </div>
+    <div id="attendee-panel"></div>
+  </div>
+
+  <!-- ATTENDEES TAB -->
+  <div id="view-all" style="display:none;">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <p class="label" style="margin:0;">Registered attendees</p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="all-count" style="font-size:12px; color:var(--text-faint);"></span>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <button class="btn-sec" onclick="printBadges()" style="font-size:12px;padding:5px 12px;white-space:nowrap;">
+              <i class="ti ti-printer" aria-hidden="true"></i> Print FC badges
+            </button>
+            <a href="/print-wi-badges.html" target="_blank"
+              style="display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:12px;
+                     padding:5px 12px;background:var(--surface);color:var(--text);
+                     border:0.5px solid var(--border-strong);border-radius:var(--radius);
+                     text-decoration:none;white-space:nowrap;">
+              <i class="ti ti-printer" aria-hidden="true"></i> Print WI badges
+            </a>
+          </div>
+        </div>
+      </div>
+      <input id="all-search" type="text" placeholder="Filter by name..." oninput="renderAllList()" style="margin-bottom:12px;" />
+      <div id="all-list"></div>
+      <!-- Hidden print grid -->
+      <div id="print-grid" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- WALK-INS TAB (merged Register + Link Badge) -->
+  <div id="view-walkin" style="display:none;">
+
+    <!-- Main card: badge scan + PCO search + actions -->
+    <div class="card" style="margin-bottom:12px;">
+      <p class="label">Walk-in check-in</p>
+
+      <!-- Badge ID row -->
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">WI Badge ID</label>
+        <div style="display:flex;gap:8px;">
+          <input id="wi-badge-input" type="text" placeholder="WI-001 or scan QR..."
+            style="flex:1;font-size:16px;text-transform:uppercase;"
+            oninput="this.value=this.value.toUpperCase();checkWiBadge()" />
+          <button class="icon-btn" onclick="startWiCamera()" title="Scan"><i class="ti ti-camera" aria-hidden="true"></i></button>
+        </div>
+        <div id="wi-cam-area" style="display:none;margin-top:8px;">
+          <video id="wi-qr-video" playsinline autoplay muted style="width:100%;border-radius:var(--radius);max-height:220px;background:#000;display:block;object-fit:cover;"></video>
+          <button class="btn-sec" onclick="stopWiCamera()" style="margin-top:6px;font-size:13px;">Stop camera</button>
+        </div>
+        <div id="wi-badge-status" style="font-size:12px;margin-top:4px;color:var(--text-faint);"></div>
+      </div>
+
+      <!-- PCO search -->
+      <div id="wi-step-search">
+        <div class="alert alert-info" style="margin-bottom:10px;font-size:13px;">
+          <i class="ti ti-search" aria-hidden="true"></i>
+          <strong>Search first.</strong> Check if they're already in Planning Center before creating a new record.
+        </div>
+        <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Search by name</label>
+        <input id="wi-search-input" type="text" placeholder="Type a name..."
+          style="font-size:16px;margin-bottom:8px;" oninput="searchWiPerson()" />
+        <div id="wi-search-results" style="margin-bottom:8px;"></div>
+
+        <div id="wi-search-selected" style="display:none;padding:10px 12px;background:var(--accent-bg);
+             border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:10px;">
+          <p style="font-size:12px;color:var(--accent-text);margin-bottom:2px;">Selected from PCO</p>
+          <p id="wi-selected-name" style="font-size:15px;font-weight:500;"></p>
+          <p id="wi-selected-id" style="font-size:11px;color:var(--text-faint);"></p>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" id="wi-link-btn" onclick="wiLinkExisting()" style="display:none;flex:1;">
+            <i class="ti ti-link" aria-hidden="true"></i> Link badge &amp; open profile
+          </button>
+          <button class="btn-sec" onclick="showWiCreateForm()" style="flex:1;">
+            <i class="ti ti-user-plus" aria-hidden="true"></i> Not in PCO — create new
+          </button>
+        </div>
+        <div id="wi-search-msg" style="margin-top:8px;"></div>
+      </div>
+
+      <!-- Create new form -->
+      <div id="wi-step-create" style="display:none;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <button class="btn-sec" onclick="hideWiCreateForm()" style="font-size:12px;padding:5px 10px;">
+            <i class="ti ti-arrow-left" aria-hidden="true"></i> Back to search
+          </button>
+          <p style="font-size:13px;color:var(--text-muted);">Creating a new PCO record</p>
+        </div>
+        <div style="display:grid;gap:10px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">First name *</label>
+              <input id="wi-first" type="text" style="font-size:16px;" />
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Last name *</label>
+              <input id="wi-last" type="text" style="font-size:16px;" />
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Phone</label>
+            <input id="wi-phone" type="tel" style="font-size:16px;" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Email</label>
+            <input id="wi-email" type="email" style="font-size:16px;" />
+          </div>
+          <button class="btn" onclick="wiCreateNew()" style="margin-top:4px;">
+            <i class="ti ti-user-plus" aria-hidden="true"></i> Create in PCO &amp; open profile
+          </button>
+          <div id="wi-create-msg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending PCO sync -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <p class="label" style="margin:0;">Pending PCO sync</p>
+        <button class="btn-sec" onclick="loadPendingSync()" style="font-size:12px;padding:5px 12px;">
+          <i class="ti ti-refresh" aria-hidden="true"></i> Refresh
+        </button>
+      </div>
+      <p style="font-size:12px;color:var(--text-faint);margin-bottom:10px;">
+        Badges captured offline without a PCO record. Review and push to Planning Center.
+      </p>
+      <div id="pending-sync-list"><p style="font-size:13px;color:var(--text-faint);">Loading...</p></div>
+    </div>
+
+    <!-- Linked WI badges -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <p class="label" style="margin:0;">Linked WI badges</p>
+        <button class="btn-sec" onclick="loadLinkedBadges()" style="font-size:12px;padding:5px 12px;">
+          <i class="ti ti-refresh" aria-hidden="true"></i> Refresh
+        </button>
+      </div>
+      <div id="linked-badges-list"><p style="font-size:13px;color:var(--text-faint);">Loading...</p></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div id="view-dash" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div class="card" style="text-align:center;">
+        <p style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total attendees</p>
+        <p id="dash-total" style="font-size:32px;font-weight:500;">—</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <p style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Notes recorded</p>
+        <p id="dash-notes" style="font-size:32px;font-weight:500;">—</p>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div class="card" style="text-align:center;">
+        <p style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;"><i class="ti ti-id-badge" aria-hidden="true"></i> Pre-registered</p>
+        <p id="dash-fc-count" style="font-size:32px;font-weight:500;color:var(--info-text);">—</p>
+        <p style="font-size:11px;color:var(--text-faint);">FC badges</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <p style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;"><i class="ti ti-walk" aria-hidden="true"></i> Walk-ins</p>
+        <p id="dash-wi-count" style="font-size:32px;font-weight:500;color:var(--warning-text);">—</p>
+        <p style="font-size:11px;color:var(--text-faint);">WI badges linked</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;">
+      <p class="label" style="margin-bottom:14px;">Spiritual milestones</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="background:var(--info-bg);border-radius:var(--radius-lg);padding:1rem;text-align:center;">
+          <i class="ti ti-droplet" aria-hidden="true" style="font-size:22px;color:var(--info-text);display:block;margin-bottom:6px;"></i>
+          <p id="dash-baptized" style="font-size:28px;font-weight:500;color:var(--info-text);">—</p>
+          <p style="font-size:12px;color:var(--info-text);margin-top:2px;">Baptized in Jesus Name</p>
+        </div>
+        <div style="background:var(--warning-bg);border-radius:var(--radius-lg);padding:1rem;text-align:center;">
+          <i class="ti ti-flame" aria-hidden="true" style="font-size:22px;color:var(--warning-text);display:block;margin-bottom:6px;"></i>
+          <p id="dash-holy-ghost" style="font-size:28px;font-weight:500;color:var(--warning-text);">—</p>
+          <p style="font-size:12px;color:var(--warning-text);margin-top:2px;">Filled with the Holy Ghost</p>
+        </div>
+        <div style="background:var(--accent-bg);border-radius:var(--radius-lg);padding:1rem;text-align:center;">
+          <i class="ti ti-book" aria-hidden="true" style="font-size:22px;color:var(--accent-text);display:block;margin-bottom:6px;"></i>
+          <p id="dash-biblestudy" style="font-size:28px;font-weight:500;color:var(--accent-text);">—</p>
+          <p style="font-size:12px;color:var(--accent-text);margin-top:2px;">Requested Bible Study</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <p class="label" style="margin:0;">Milestone records</p>
+        <button class="btn-sec" onclick="loadDashboard()" style="font-size:12px;padding:5px 12px;">
+          <i class="ti ti-refresh" aria-hidden="true"></i> Refresh
+        </button>
+      </div>
+      <div id="dash-list"></div>
+    </div>
+  </div>
+
+
+
+  <!-- SCHEDULE TAB -->
+  <div id="view-sched" style="display:none;">
+
+    <!-- Day One -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="background:var(--info-bg);border-radius:var(--radius);padding:4px 12px;flex-shrink:0;">
+          <p style="font-size:11px;color:var(--info-text);font-weight:500;text-transform:uppercase;letter-spacing:.06em;">Day One</p>
+        </div>
+        <p style="font-size:15px;font-weight:500;">Friday, June 19, 2026</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0;">
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">5:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Prayer &amp; Greeting</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">5:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Song Service</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">5:30 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Testimonies</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">5:45 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Preaching of the Word</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">6:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Prayer of Faith, Repentance, Baptism of the Holy Spirit</p>
+            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+              <span style="background:var(--info-bg);color:var(--info-text);font-size:11px;padding:2px 8px;border-radius:var(--radius);"><i class="ti ti-droplet" aria-hidden="true"></i> Baptism</span>
+              <span style="background:var(--warning-bg);color:var(--warning-text);font-size:11px;padding:2px 8px;border-radius:var(--radius);"><i class="ti ti-flame" aria-hidden="true"></i> Holy Spirit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day Two -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="background:var(--accent-bg);border-radius:var(--radius);padding:4px 12px;flex-shrink:0;">
+          <p style="font-size:11px;color:var(--accent-text);font-weight:500;text-transform:uppercase;letter-spacing:.06em;">Day Two</p>
+        </div>
+        <p style="font-size:15px;font-weight:500;">Saturday, June 20, 2026</p>
+      </div>
+
+      <!-- Kids Service -->
+      <div style="background:var(--warning-bg);border-radius:var(--radius);padding:6px 12px;margin-bottom:12px;">
+        <p style="font-size:11px;color:var(--warning-text);font-weight:500;text-transform:uppercase;letter-spacing:.06em;"><i class="ti ti-star" aria-hidden="true"></i> Kids Service</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0;margin-bottom:20px;">
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">12:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Prayer &amp; Greeting</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">12:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Kid's Song Service</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">12:30 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Kid's Evangelist</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Adult Service -->
+      <div style="background:var(--info-bg);border-radius:var(--radius);padding:6px 12px;margin-bottom:12px;">
+        <p style="font-size:11px;color:var(--info-text);font-weight:500;text-transform:uppercase;letter-spacing:.06em;"><i class="ti ti-users" aria-hidden="true"></i> Adult Service</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0;">
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">2:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Prayer &amp; Greeting</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">2:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Music &amp; Song Service</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">2:30 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Testimonies</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">2:45 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Prayer &amp; Music</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">3:00 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Preaching of the Word</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;padding:10px 0;">
+          <p style="font-size:13px;color:var(--text-faint);min-width:64px;flex-shrink:0;padding-top:1px;">3:15 PM</p>
+          <div>
+            <p style="font-size:14px;font-weight:500;">Prayer of Faith, Repentance, Baptism of the Holy Spirit</p>
+            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+              <span style="background:var(--info-bg);color:var(--info-text);font-size:11px;padding:2px 8px;border-radius:var(--radius);"><i class="ti ti-droplet" aria-hidden="true"></i> Baptism</span>
+              <span style="background:var(--warning-bg);color:var(--warning-text);font-size:11px;padding:2px 8px;border-radius:var(--radius);"><i class="ti ti-flame" aria-hidden="true"></i> Holy Spirit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOLLOW-UP TAB -->
+  <div id="view-followup" style="display:none;">
+
+    <!-- View switcher -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button id="fu-view-btn-list" class="btn" onclick="setFuView('list')" style="flex:1;font-size:13px;">
+        <i class="ti ti-list" aria-hidden="true"></i> All follow-ups
+      </button>
+      <button id="fu-view-btn-mine" class="btn-sec" onclick="setFuView('mine')" style="flex:1;font-size:13px;">
+        <i class="ti ti-user" aria-hidden="true"></i> My assignments
+      </button>
+      <button id="fu-view-btn-volunteers" class="btn-sec" onclick="setFuView('volunteers')" style="flex:1;font-size:13px;">
+        <i class="ti ti-users" aria-hidden="true"></i> Volunteers
+      </button>
+    </div>
+
+    <!-- All follow-ups list -->
+    <div id="fu-view-list">
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 8px;">
+          <p class="label" style="margin:0;">People needing follow-up</p>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-sec" onclick="syncFollowupsFromDashboard()" style="font-size:12px;padding:5px 10px;">
+              <i class="ti ti-refresh" aria-hidden="true"></i> Sync from dashboard
+            </button>
+          </div>
+        </div>
+        <div style="padding:0 14px 8px;">
+          <select id="fu-filter-status" onchange="renderFollowupList()" style="font-size:13px;padding:6px 10px;width:100%;">
+            <option value="">All statuses</option>
+            <option value="unassigned">Unassigned</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div id="fu-list"></div>
+      </div>
+    </div>
+
+    <!-- My assignments -->
+    <div id="fu-view-mine" style="display:none;">
+      <div class="card">
+        <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center;">
+          <p class="label" style="margin:0;">My assignments</p>
+          <button class="btn-sec" onclick="loadFollowups()" style="font-size:12px;padding:5px 10px;">
+            <i class="ti ti-refresh" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div id="fu-mine-list"></div>
+      </div>
+    </div>
+
+    <!-- Volunteers management -->
+    <div id="fu-view-volunteers" style="display:none;">
+      <div class="card" style="margin-bottom:12px;">
+        <div style="padding:12px 14px;">
+          <p class="label" style="margin-bottom:10px;">Add volunteer</p>
+          <div style="display:grid;gap:8px;">
+            <input id="vol-name" type="text" placeholder="Full name *" style="font-size:16px;" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <input id="vol-phone" type="tel" placeholder="(315) 555-0100 *"
+                style="font-size:16px;" oninput="formatPhoneInput(this)" />
+              <input id="vol-email" type="email" placeholder="Email" style="font-size:16px;" />
+            </div>
+            <p style="font-size:11px;color:var(--text-faint);">
+              Phone number required — used to match volunteers who sign in later.
+            </p>
+            <button class="btn" onclick="addVolunteer()" style="font-size:13px;">
+              <i class="ti ti-plus" aria-hidden="true"></i> Add volunteer
+            </button>
+            <div id="vol-msg"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center;">
+          <p class="label" style="margin:0;">Volunteer roster</p>
+          <button class="btn-sec" onclick="loadVolunteers()" style="font-size:12px;padding:5px 10px;">
+            <i class="ti ti-refresh" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div id="vol-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Follow-up detail modal -->
+  <div class="modal-backdrop hidden" id="fu-modal">
+    <div class="modal" style="max-width:480px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div style="flex:1;">
+          <h2 id="fu-modal-name" style="font-size:18px;font-weight:500;"></h2>
+          <p id="fu-modal-milestones" style="font-size:12px;color:var(--text-faint);margin-top:3px;"></p>
+        </div>
+        <button onclick="closeFuModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);padding:0 0 0 10px;">
+          <i class="ti ti-x" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <!-- Contact info — editable -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--bg);border-radius:var(--radius);">
+        <p class="label" style="margin-bottom:8px;">Contact info</p>
+        <div style="display:grid;gap:8px;">
+          <div>
+            <label style="font-size:11px;color:var(--text-faint);display:block;margin-bottom:3px;">Phone</label>
+            <input id="fu-edit-phone" type="tel" placeholder="Phone number" style="font-size:16px;width:100%;" />
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-faint);display:block;margin-bottom:3px;">Email</label>
+            <input id="fu-edit-email" type="email" placeholder="Email address" style="font-size:16px;width:100%;" />
+          </div>
+          <button class="btn-sec" onclick="saveContactInfo()" style="font-size:13px;padding:8px;">
+            <i class="ti ti-cloud-upload" aria-hidden="true"></i> Save &amp; sync to PCO
+          </button>
+          <div id="fu-contact-info-msg"></div>
+        </div>
+      </div>
+
+      <!-- Family -->
+      <div id="fu-modal-family" style="margin-bottom:14px;"></div>
+
+      <!-- Assignment -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--bg);border-radius:var(--radius);">
+        <p class="label" style="margin-bottom:8px;">Assigned to</p>
+        <select id="fu-modal-assignee" style="width:100%;font-size:16px;padding:9px 10px;margin-bottom:8px;">
+          <option value="">— Unassigned —</option>
+        </select>
+        <button class="btn" onclick="saveAssignment()" style="width:100%;font-size:14px;padding:10px;">
+          <i class="ti ti-device-floppy" aria-hidden="true"></i> Save assignment
+        </button>
+      </div>
+
+      <!-- Campus assignment -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--bg);border-radius:var(--radius);">
+        <p class="label" style="margin-bottom:8px;">Campus referral</p>
+        <p style="font-size:12px;color:var(--text-faint);margin-bottom:8px;line-height:1.5;">
+          If this person is not from the Syracuse area, assign them to their nearest CLA campus for local follow-up.
+        </p>
+        <select id="fu-modal-campus" style="width:100%;font-size:16px;padding:9px 10px;margin-bottom:8px;">
+          <option value="">— No campus referral —</option>
+        </select>
+        <button class="btn-sec" onclick="saveCampus()" style="width:100%;font-size:13px;padding:8px;">
+          <i class="ti ti-building-church" aria-hidden="true"></i> Save &amp; sync to PCO
+        </button>
+        <div id="fu-campus-msg" style="margin-top:6px;"></div>
+      </div>
+
+      <!-- Status -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--bg);border-radius:var(--radius);">
+        <p class="label" style="margin-bottom:8px;">Status</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="setFuStatus('unassigned')" id="fu-status-btn-unassigned"
+            class="btn-sec" style="font-size:12px;padding:5px 10px;">Unassigned</button>
+          <button onclick="setFuStatus('assigned')" id="fu-status-btn-assigned"
+            class="btn-sec" style="font-size:12px;padding:5px 10px;">Assigned</button>
+          <button onclick="setFuStatus('in_progress')" id="fu-status-btn-in_progress"
+            class="btn-sec" style="font-size:12px;padding:5px 10px;">In Progress</button>
+          <button onclick="setFuStatus('completed')" id="fu-status-btn-completed"
+            class="btn-sec" style="font-size:12px;padding:5px 10px;">Completed</button>
+        </div>
+        <div id="fu-status-msg" style="margin-top:6px;"></div>
+      </div>
+
+      <!-- Log contact attempt -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--bg);border-radius:var(--radius);">
+        <p class="label" style="margin-bottom:8px;">Log contact attempt</p>
+        <div style="display:grid;gap:8px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <label style="font-size:11px;color:var(--text-faint);display:block;margin-bottom:3px;">Method</label>
+              <select id="fu-contact-method" style="font-size:14px;padding:7px 8px;width:100%;">
+                <option value="call">📞 Phone call</option>
+                <option value="text">💬 Text message</option>
+                <option value="visit">🏠 Home visit</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-faint);display:block;margin-bottom:3px;">Outcome</label>
+              <select id="fu-contact-outcome" style="font-size:14px;padding:7px 8px;width:100%;">
+                <option value="reached">✅ Reached</option>
+                <option value="no_answer">📵 No answer</option>
+                <option value="voicemail">📬 Left voicemail</option>
+                <option value="wrong_number">❌ Wrong number</option>
+                <option value="not_interested">🚫 Not interested</option>
+                <option value="callback">🔄 Callback requested</option>
+              </select>
+            </div>
+          </div>
+          <textarea id="fu-contact-note" rows="2" placeholder="Notes from this attempt..."
+            style="font-size:16px;resize:vertical;"></textarea>
+          <button class="btn" onclick="logContact()" style="font-size:13px;">
+            <i class="ti ti-device-floppy" aria-hidden="true"></i> Save contact attempt
+          </button>
+          <div id="fu-contact-msg"></div>
+        </div>
+      </div>
+
+      <!-- Contact history -->
+      <div>
+        <p class="label" style="margin-bottom:8px;">Contact history</p>
+        <div id="fu-contact-history"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Recorder name modal -->
+<div class="modal-backdrop hidden" id="vol-delete-modal">
+  <div class="modal">
+    <h2 style="margin-bottom:8px;">Remove volunteer</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;line-height:1.55;">
+      Type <strong id="vol-delete-name-display"></strong> exactly to confirm removal.
+    </p>
+    <input id="vol-delete-confirm-input" type="text" placeholder="Type name to confirm"
+      style="font-size:16px;width:100%;margin-bottom:10px;"
+      oninput="checkDeleteConfirm()" />
+    <div id="vol-delete-msg" style="margin-bottom:10px;min-height:18px;font-size:12px;color:var(--danger-text);"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-sec" onclick="closeDeleteModal()" style="flex:1;">Cancel</button>
+      <button id="vol-delete-confirm-btn" class="btn" onclick="confirmDeleteVolunteer()"
+        style="flex:1;background:var(--danger-text);opacity:0.4;cursor:not-allowed;" disabled>
+        <i class="ti ti-trash" aria-hidden="true"></i> Remove
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="recorder-modal">
+  <div class="modal">
+    <h2 id="recorder-modal-title">Welcome to Relay</h2>
+    <p id="recorder-modal-desc" style="margin-bottom:1rem;font-size:13px;color:var(--text-muted);line-height:1.55;">
+      Enter your name and phone number so your notes are attributed correctly and you can recover your profile if you log in on a new device.
+    </p>
+    <div style="display:grid;gap:10px;margin-bottom:1rem;">
+      <div>
+        <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Your name *</label>
+        <input id="recorder-modal-input" type="text" placeholder="e.g. Pastor Deas"
+          style="font-size:16px;width:100%;"
+          onkeydown="if(event.key==='Enter') document.getElementById('recorder-phone-input').focus()" />
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">
+          Your phone number <span id="recorder-phone-label" style="color:var(--danger-text);">*</span>
+        </label>
+        <input id="recorder-phone-input" type="tel" placeholder="(315) 555-0100"
+          style="font-size:16px;width:100%;"
+          oninput="formatPhoneInput(this)"
+          onkeydown="if(event.key==='Enter') confirmRecorder()" />
+        <p style="font-size:11px;color:var(--text-faint);margin-top:3px;">
+          Used to identify you if your session resets. Never shared publicly.
+        </p>
+      </div>
+    </div>
+    <div id="recorder-modal-msg" style="margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="confirmRecorder()" style="flex:1;">
+        <i class="ti ti-check" aria-hidden="true"></i> Continue
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+async function checkAuth() {
+  const r = await fetch('/auth/status').then(res => res.json());
+  if (!r.authenticated) {
+    window.location.href = '/login.html';
+  }
+}
+
+async function logout() {
+  await fetch('/auth/logout', { method: 'POST' });
+  window.location.href = '/login.html';
+}
+
+// ── Recorder profile ──────────────────────────────────────────────────────────
+function getRecorderName() {
+  return localStorage.getItem('conf-recorder') || '';
+}
+
+function getRecorderPhone() {
+  return localStorage.getItem('conf-recorder-phone') || '';
+}
+
+function setRecorderDisplay(name) {
+  const el = document.getElementById('recorder-display');
+  if (el) el.textContent = name || 'Set your name';
+}
+
+function openRecorderModal(isFirstLaunch) {
+  const modal = document.getElementById('recorder-modal');
+
+  const phoneLabel = document.getElementById('recorder-phone-label');
+
+  document.getElementById('recorder-modal-input').value = getRecorderName();
+  const existingPhone = getRecorderPhone();
+  // Display stored digits in formatted form
+  const phoneInput = document.getElementById('recorder-phone-input');
+  phoneInput.value = existingPhone;
+  if (existingPhone) formatPhoneInput(phoneInput);
+  document.getElementById('recorder-modal-msg').innerHTML = '';
+
+  // If re-opening to add missing phone, update copy
+  const hasPhone = !!getRecorderPhone();
+  if (!isFirstLaunch && !hasPhone) {
+    document.getElementById('recorder-modal-title').textContent = 'Add your phone number';
+    document.getElementById('recorder-modal-desc').textContent =
+      'We need your phone number to prevent duplicate profiles and recover your session across devices.';
+    phoneLabel.style.color = 'var(--danger-text)';
+  } else if (!isFirstLaunch) {
+    document.getElementById('recorder-modal-title').textContent = 'Update your profile';
+    document.getElementById('recorder-modal-desc').textContent =
+      'Update your name or phone number. Changes apply immediately.';
+    phoneLabel.style.color = 'var(--text-faint)';
+  } else {
+    document.getElementById('recorder-modal-title').textContent = 'Welcome to Relay';
+    phoneLabel.style.color = 'var(--danger-text)';
+  }
+
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('recorder-modal-input').focus(), 50);
+}
+
+function formatPhoneDisplay(digits) {
+  // Format raw 10-digit string as (XXX) XXX-XXXX
+  const d = (digits || '').replace(/\D/g, '');
+  if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+  return digits; // return as-is if not 10 digits
+}
+
+function formatPhoneInput(input) {
+  // Strip everything except digits
+  let digits = input.value.replace(/\D/g, '').slice(0, 10);
+  // Format as (XXX) XXX-XXXX
+  if (digits.length <= 3) {
+    input.value = digits.length ? '(' + digits : '';
+  } else if (digits.length <= 6) {
+    input.value = '(' + digits.slice(0,3) + ') ' + digits.slice(3);
+  } else {
+    input.value = '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6);
+  }
+}
+
+function normalizePhone(val) {
+  return val.replace(/\D/g, '');
+}
+
+function validatePhone(val) {
+  const digits = normalizePhone(val);
+  return digits.length === 10;
+}
+
+async function confirmRecorder() {
+  const name = document.getElementById('recorder-modal-input').value.trim();
+  const phone = document.getElementById('recorder-phone-input').value.trim();
+  const msg = document.getElementById('recorder-modal-msg');
+
+  if (!name) {
+    document.getElementById('recorder-modal-input').style.borderColor = 'var(--danger-text)';
+    return;
+  }
+  if (!phone || !validatePhone(phone)) {
+    document.getElementById('recorder-phone-input').style.borderColor = 'var(--danger-text)';
+    msg.innerHTML = '<p style="font-size:12px;color:var(--danger-text);">Please enter a valid 10-digit US phone number.</p>';
+    return;
+  }
+
+  msg.innerHTML = '<span class="spinner"></span>';
+
+  // Check for duplicate phone in volunteer roster
+  try {
+    const r = await fetch('/api/volunteers').then(r => r.json());
+    const vols = r.volunteers || [];
+    const existingByPhone = vols.find(v =>
+      v.phone && v.phone.replace(/\D/g,'') === phone.replace(/\D/g,'') &&
+      v.name.toLowerCase() !== name.toLowerCase()
+    );
+    if (existingByPhone) {
+      msg.innerHTML = `<p style="font-size:12px;color:var(--warning-text);">
+        ⚠ That phone number is registered to <strong>${esc(existingByPhone.name)}</strong>.
+        If that's you, update your name to match. If not, use a different number.
+      </p>`;
+      return;
+    }
+  } catch(e) {}
+
+  // Save profile locally — store normalized digits for consistent comparison
+  const normalizedPhone = normalizePhone(phone);
+  localStorage.setItem('conf-recorder', name);
+  localStorage.setItem('conf-recorder-phone', normalizedPhone);
+  setRecorderDisplay(name);
+
+  // Sync name to server session so status page can show it
+  fetch('/auth/set-name', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, phone: normalizedPhone }),
+  }).catch(() => {});
+
+  // Register/update in volunteer roster
+  try {
+    const r = await fetch('/api/volunteers').then(r => r.json());
+    const vols = r.volunteers || [];
+    // Check if already registered by phone
+    const existing = vols.find(v =>
+      v.phone && v.phone.replace(/\D/g,'') === phone.replace(/\D/g,'')
+    );
+    if (existing) {
+      // Already registered — restore name from server record
+      if (existing.name !== name) {
+        // Name changed — update display to match what server has, or let them rename
+        // We trust what they typed — no server update needed for name change here
+      }
+    } else {
+      // New registration
+      await fetch('/api/volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone: normalizedPhone }),
+      });
+    }
+  } catch(e) {}
+
+  msg.innerHTML = '';
+  document.getElementById('recorder-modal').classList.add('hidden');
+}
+
+
+
+function checkFirstLaunch() {
+  const hasName = !!localStorage.getItem('conf-recorder');
+  const hasPhone = !!localStorage.getItem('conf-recorder-phone');
+
+  if (!hasName) {
+    // No profile at all — first launch
+    openRecorderModal(true);
+  } else if (!hasPhone) {
+    // Has name but no phone — prompt to add phone
+    openRecorderModal(false);
+  } else {
+    setRecorderDisplay(getRecorderName());
+  }
+}
+
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const body = document.body;
+  const icon = document.getElementById('theme-icon');
+  // Determine current effective theme
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const forcedLight = body.classList.contains('force-light');
+  const forcedDark = body.classList.contains('force-dark');
+  const currentlyDark = forcedDark || (!forcedLight && systemDark);
+
+  body.classList.remove('force-light', 'force-dark');
+  if (currentlyDark) {
+    body.classList.add('force-light');
+    icon.className = 'ti ti-moon';
+    localStorage.setItem('conf-theme', 'light');
+  } else {
+    body.classList.add('force-dark');
+    icon.className = 'ti ti-sun';
+    localStorage.setItem('conf-theme', 'dark');
+  }
+}
+
+function applyStoredTheme() {
+  const saved = localStorage.getItem('conf-theme');
+  const icon = document.getElementById('theme-icon');
+  if (saved === 'dark') {
+    document.body.classList.add('force-dark');
+    icon.className = 'ti ti-sun';
+  } else {
+    // Default to light mode unless user explicitly chose dark
+    document.body.classList.add('force-light');
+    icon.className = 'ti ti-moon';
+  }
+}
+
+let attendees = [];
+let selectedFormId = null;
+let lockedFormId = null;
+let videoStream = null;
+let scanInterval = null;
+
+// ── Install banner ────────────────────────────────────────────────────────────
+function showInstallBanner() {
+  if (localStorage.getItem('install-banner-dismissed')) return;
+
+  const banner = document.getElementById('install-banner');
+  const instructions = document.getElementById('install-instructions');
+  const ua = navigator.userAgent;
+
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isAndroid = /Android/.test(ua);
+  const isChrome = /Chrome/.test(ua) && !/Edg/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  // Don't show if already installed as PWA
+  if (isStandalone) return;
+
+  if (isIOS && isSafari) {
+    instructions.textContent = 'Tap the Share button (□↑) at the bottom of Safari, then "Add to Home Screen".';
+  } else if (isIOS && isChrome) {
+    instructions.textContent = 'Tap the Share button (□↑) at the top right, then "Add to Home Screen".';
+  } else if (isAndroid && isChrome) {
+    instructions.textContent = 'Tap the menu (⋮) at the top right, then "Add to Home screen".';
+  } else {
+    // Desktop or unknown — skip
+    return;
+  }
+
+  banner.style.display = 'block';
+}
+
+function dismissInstallBanner() {
+  document.getElementById('install-banner').style.display = 'none';
+  localStorage.setItem('install-banner-dismissed', '1');
+}
+
+// ── Follow-up system ─────────────────────────────────────────────────────────
+let campusData = []; // cached campus list from PCO
+
+async function loadCampuses() {
+  try {
+    const res = await fetch('/api/campuses');
+    if (!res.ok) {
+      console.warn('loadCampuses HTTP error:', res.status);
+      return;
+    }
+    const r = await res.json();
+    if (r.campuses && r.campuses.length) {
+      campusData = r.campuses;
+      console.log('Campuses loaded:', campusData.length);
+    } else {
+      console.warn('loadCampuses empty response:', JSON.stringify(r));
+    }
+  } catch(e) { console.warn('loadCampuses error:', e.message); }
+}
+let fuData = []; // all follow-up records
+let volData = []; // all volunteers
+let fuCurrentPersonId = null;
+let fuCurrentView = 'list';
+
+function setFuView(view) {
+  fuCurrentView = view;
+  ['list','mine','volunteers'].forEach(v => {
+    document.getElementById('fu-view-' + v).style.display = v === view ? 'block' : 'none';
+    const btn = document.getElementById('fu-view-btn-' + v);
+    if (btn) {
+      btn.className = v === view ? 'btn' : 'btn-sec';
+      btn.style.flex = '1';
+      btn.style.fontSize = '13px';
+    }
+  });
+  if (view === 'mine') renderMinelist();
+}
+
+const MILESTONE_LABELS = {
+  baptized: '💧 Baptized',
+  holyghost: '🔥 Holy Ghost',
+  biblestudy: '📖 Bible Study',
+};
+
+const STATUS_COLORS = {
+  unassigned: 'var(--danger-bg)',
+  assigned: 'var(--info-bg)',
+  in_progress: 'var(--warning-bg)',
+  completed: 'var(--accent-bg)',
+};
+const STATUS_TEXT_COLORS = {
+  unassigned: 'var(--danger-text)',
+  assigned: 'var(--info-text)',
+  in_progress: 'var(--warning-text)',
+  completed: 'var(--accent-text)',
+};
+const STATUS_LABELS = {
+  unassigned: 'Unassigned',
+  assigned: 'Assigned',
+  in_progress: 'In Progress',
+  completed: 'Completed ✓',
+};
+
+async function loadFollowups() {
+  try {
+    const r = await fetch('/api/followups').then(r => r.json());
+    fuData = r.followups || [];
+    renderFollowupList();
+    renderMinelist();
+    updateFuBadge();
+  } catch(e) {
+    document.getElementById('fu-list').innerHTML =
+      `<div class="alert alert-danger" style="margin:12px;">${esc(e.message)}</div>`;
+  }
+}
+
+async function loadVolunteers() {
+  try {
+    const r = await fetch('/api/volunteers').then(r => r.json());
+    volData = r.volunteers || [];
+    renderVolunteerList();
+  } catch(e) {}
+}
+
+function updateFuBadge() {
+  const badge = document.getElementById('fu-badge');
+  if (!badge) return;
+  const unassigned = fuData.filter(f => f.status === 'unassigned').length;
+  if (unassigned > 0) {
+    badge.textContent = unassigned;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderFollowupList() {
+  const filter = document.getElementById('fu-filter-status')?.value || '';
+  const list = document.getElementById('fu-list');
+  let items = fuData.filter(f => !filter || f.status === filter);
+  items.sort((a,b) => {
+    const order = { unassigned:0, assigned:1, in_progress:2, completed:3 };
+    return (order[a.status]||0) - (order[b.status]||0) || a.name.localeCompare(b.name);
+  });
+
+  if (!items.length) {
+    list.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:14px;">
+      ${fuData.length ? 'No records match this filter.' : 'No follow-up records yet. Use "Sync from dashboard" to pull in milestone holders.'}</p>`;
+    return;
+  }
+
+  list.innerHTML = items.map(f => `
+    <div onclick="openFuModal('${f.person_id}')"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+             border-bottom:0.5px solid var(--border);cursor:pointer;">
+      <div class="avatar avatar-sm" style="flex-shrink:0;">${initials({name:f.name})}</div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:14px;font-weight:500;">${esc(f.name)}</p>
+        <p style="font-size:11px;color:var(--text-faint);">
+          ${(f.milestones||[]).map(m => MILESTONE_LABELS[m]||m).join(' · ')}
+          ${f.assigned_to ? '· → ' + esc(f.assigned_to) : ''}
+          ${f.campus_name ? '· 🏛 ' + esc(f.campus_name) : ''}
+        </p>
+      </div>
+      <span style="font-size:11px;font-weight:500;padding:3px 8px;border-radius:var(--radius);
+             background:${STATUS_COLORS[f.status]||'var(--bg)'};
+             color:${STATUS_TEXT_COLORS[f.status]||'var(--text-muted)'};white-space:nowrap;">
+        ${STATUS_LABELS[f.status]||f.status}
+      </span>
+    </div>`).join('');
+}
+
+function renderMinelist() {
+  const myName = getRecorderName();
+  const list = document.getElementById('fu-mine-list');
+  if (!list) return;
+  const mine = fuData.filter(f => f.assigned_to === myName && f.status !== 'completed');
+
+  if (!myName) {
+    list.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:14px;">
+      Set your name in the header to see your assignments.</p>`;
+    return;
+  }
+  if (!mine.length) {
+    list.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:14px;">
+      No active assignments for ${esc(myName)}.</p>`;
+    return;
+  }
+  list.innerHTML = mine.map(f => `
+    <div onclick="openFuModal('${f.person_id}')"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+             border-bottom:0.5px solid var(--border);cursor:pointer;">
+      <div class="avatar avatar-sm">${initials({name:f.name})}</div>
+      <div style="flex:1;">
+        <p style="font-size:14px;font-weight:500;">${esc(f.name)}</p>
+        <p style="font-size:11px;color:var(--text-faint);">
+          ${f.phone ? '📞 ' + esc(f.phone) : ''} ${f.email ? '✉ ' + esc(f.email) : ''}
+        </p>
+        <p style="font-size:11px;color:var(--text-faint);">
+          ${(f.milestones||[]).map(m => MILESTONE_LABELS[m]||m).join(' · ')}
+        </p>
+      </div>
+      <span style="font-size:11px;font-weight:500;padding:3px 8px;border-radius:var(--radius);
+             background:${STATUS_COLORS[f.status]||'var(--bg)'};
+             color:${STATUS_TEXT_COLORS[f.status]||'var(--text-muted)'};white-space:nowrap;">
+        ${STATUS_LABELS[f.status]||f.status}
+      </span>
+    </div>`).join('');
+}
+
+function renderVolunteerList() {
+  const list = document.getElementById('vol-list');
+  if (!list) return;
+  if (!volData.length) {
+    list.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:14px;">No volunteers added yet.</p>`;
+    return;
+  }
+  list.innerHTML = volData.map(v => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:0.5px solid var(--border);">
+      <div class="avatar avatar-sm">${((v.name||'').split(' ').map(n=>n[0]||'').join('').toUpperCase().slice(0,2))}</div>
+      <div style="flex:1;">
+        <p style="font-size:14px;font-weight:500;">${esc(v.name)}</p>
+        <p style="font-size:12px;color:var(--text-faint);">
+          ${v.phone ? formatPhoneDisplay(v.phone) : '<span style="color:var(--warning-text);">⚠ No phone</span>'}${v.phone && v.email ? ' · ' : ''}${v.email ? esc(v.email) : ''}
+        </p>
+      </div>
+      <button onclick="removeVolunteer('${v.id}')" class="icon-btn"
+        style="width:30px;height:30px;border:none;" title="Remove">
+        <i class="ti ti-trash" aria-hidden="true" style="font-size:15px;color:var(--danger-text);"></i>
+      </button>
+    </div>`).join('');
+}
+
+async function autoRegisterVolunteer() {
+  const myName = getRecorderName();
+  if (!myName) return;
+  // Check if already in roster
+  if (volData.find(v => v.name.toLowerCase() === myName.toLowerCase())) return;
+  // Add them silently
+  try {
+    const r = await fetch('/api/volunteers', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: myName }),
+    }).then(r => r.json());
+    if (r.ok) await loadVolunteers();
+  } catch(e) {}
+}
+
+async function addVolunteer() {
+  const name = document.getElementById('vol-name').value.trim();
+  const phone = document.getElementById('vol-phone').value.trim();
+  const email = document.getElementById('vol-email').value.trim();
+  const msg = document.getElementById('vol-msg');
+  if (!name) {
+    msg.innerHTML = '<div class="alert alert-danger">Name is required.</div>';
+    return;
+  }
+  if (!phone || !validatePhone(phone)) {
+    msg.innerHTML = '<div class="alert alert-danger">A valid 10-digit phone number is required.</div>';
+    document.getElementById('vol-phone').style.borderColor = 'var(--danger-text)';
+    return;
+  }
+  document.getElementById('vol-phone').style.borderColor = '';
+  // Check for duplicate phone
+  const normalizedNew = normalizePhone(phone);
+  const dupe = volData.find(v => normalizePhone(v.phone || '') === normalizedNew);
+  if (dupe) {
+    msg.innerHTML = `<div class="alert alert-danger">That number is already registered to <strong>${esc(dupe.name)}</strong>.</div>`;
+    return;
+  }
+  msg.innerHTML = '<span class="spinner"></span>';
+  try {
+    const r = await fetch('/api/volunteers', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name, phone: normalizedNew, email }),
+    }).then(r => r.json());
+    if (r.error) throw new Error(r.error);
+    ['vol-name','vol-phone','vol-email'].forEach(id => document.getElementById(id).value = '');
+    msg.innerHTML = `<div class="alert alert-success"><i class="ti ti-check"></i> ${esc(name)} added.</div>`;
+    await loadVolunteers();
+  } catch(e) { msg.innerHTML = `<div class="alert alert-danger">${esc(e.message)}</div>`; }
+}
+
+let volPendingDeleteId = null;
+
+function removeVolunteer(id) {
+  const vol = volData.find(v => v.id === id);
+  if (!vol) return;
+
+  volPendingDeleteId = id;
+  document.getElementById('vol-delete-name-display').textContent = vol.name;
+  document.getElementById('vol-delete-confirm-input').value = '';
+  document.getElementById('vol-delete-msg').textContent = '';
+
+  const confirmBtn = document.getElementById('vol-delete-confirm-btn');
+  confirmBtn.disabled = true;
+  confirmBtn.style.opacity = '0.4';
+  confirmBtn.style.cursor = 'not-allowed';
+
+  // Warn if active assignments
+  const hasAssignments = fuData.some(f =>
+    f.assigned_to === vol.name && f.status !== 'completed'
+  );
+  if (hasAssignments) {
+    document.getElementById('vol-delete-msg').innerHTML =
+      `<span style="color:var(--warning-text);">⚠ This volunteer has active assignments.</span>`;
+  }
+
+  document.getElementById('vol-delete-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('vol-delete-confirm-input').focus(), 50);
+}
+
+function checkDeleteConfirm() {
+  const vol = volData.find(v => v.id === volPendingDeleteId);
+  if (!vol) return;
+  const typed = document.getElementById('vol-delete-confirm-input').value;
+  const confirmBtn = document.getElementById('vol-delete-confirm-btn');
+  const matches = typed === vol.name;
+  confirmBtn.disabled = !matches;
+  confirmBtn.style.opacity = matches ? '1' : '0.4';
+  confirmBtn.style.cursor = matches ? 'pointer' : 'not-allowed';
+}
+
+async function confirmDeleteVolunteer() {
+  if (!volPendingDeleteId) return;
+  const vol = volData.find(v => v.id === volPendingDeleteId);
+  const typed = document.getElementById('vol-delete-confirm-input').value;
+  if (typed !== vol?.name) return;
+
+  await fetch(`/api/volunteers/${volPendingDeleteId}`, { method: 'DELETE' });
+  closeDeleteModal();
+  await loadVolunteers();
+}
+
+function closeDeleteModal() {
+  document.getElementById('vol-delete-modal').classList.add('hidden');
+  volPendingDeleteId = null;
+}
+
+async function syncFollowupsFromDashboard() {
+  const list = document.getElementById('fu-list');
+  list.innerHTML = '<p style="font-size:13px;color:var(--text-faint);padding:14px;"><span class="spinner"></span> Syncing from PCO...</p>';
+
+  // Pull notes for all attendees to find milestone holders
+  const recorder = getRecorderName();
+  let synced = 0;
+
+  for (let i = 0; i < attendees.length; i += 5) {
+    const batch = attendees.slice(i, i + 5);
+    await Promise.all(batch.map(async a => {
+      if (!a.person_id) return;
+      try {
+        const [notesR, personR] = await Promise.all([
+          fetch(`/api/people/${a.person_id}/notes`).then(r => r.json()),
+          fetch(`/api/people/${a.person_id}`).then(r => r.json()),
+        ]);
+        const notes = notesR.notes || [];
+        const milestones = [];
+        if (notes.some(n => n.note.includes('[MILESTONE:BAPTIZED]'))) milestones.push('baptized');
+        if (notes.some(n => n.note.includes('[MILESTONE:HOLYGHOST]'))) milestones.push('holyghost');
+        if (notes.some(n => n.note.includes('[MILESTONE:BIBLESTUDY]'))) milestones.push('biblestudy');
+        if (!milestones.length) return;
+
+        // Pull family
+        let family = [];
+        try {
+          const fr = await fetch(`/api/people/${a.person_id}/family`).then(r => r.json());
+          family = fr.family || [];
+        } catch(e) {}
+
+        await fetch('/api/followups', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            person_id: a.person_id,
+            name: a.name || `${a.first_name} ${a.last_name}`,
+            phone: personR.phones?.[0] || '',
+            email: personR.emails?.[0] || '',
+            family,
+            milestones,
+            changed_by: recorder,
+          }),
+        });
+        synced++;
+      } catch(e) {}
+    }));
+  }
+
+  await loadFollowups();
+  const msg = synced > 0
+    ? `<div class="alert alert-success" style="margin:12px;"><i class="ti ti-check"></i> Synced ${synced} people needing follow-up.</div>`
+    : `<div class="alert alert-info" style="margin:12px;">No new milestone holders found. Make sure milestones are recorded first.</div>`;
+  document.getElementById('fu-list').insertAdjacentHTML('afterbegin', msg);
+}
+
+async function openFuModal(personId) {
+  fuCurrentPersonId = personId;
+  const f = fuData.find(x => x.person_id === personId);
+  if (!f) return;
+
+  document.getElementById('fu-modal-name').textContent = f.name;
+  document.getElementById('fu-modal-milestones').textContent =
+    (f.milestones||[]).map(m => MILESTONE_LABELS[m]||m).join(' · ');
+
+  // Populate editable contact fields
+  document.getElementById('fu-edit-phone').value = f.phone || '';
+  document.getElementById('fu-edit-email').value = f.email || '';
+  document.getElementById('fu-contact-info-msg').innerHTML = '';
+
+  // Family
+  const famHtml = (f.family||[]).length
+    ? `<div style="padding:10px 0;">
+        <p class="label" style="margin-bottom:6px;">Household</p>
+        ${f.family.map(m => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div class="avatar avatar-sm">${initials({name:m.name})}</div>
+            <p style="font-size:13px;">${esc(m.name)}</p>
+          </div>`).join('')}
+       </div>`
+    : '';
+  document.getElementById('fu-modal-family').innerHTML = famHtml;
+
+  // Populate campus dropdown — ensure loaded
+  if (!campusData.length) await loadCampuses();
+  const campusSel = document.getElementById('fu-modal-campus');
+  campusSel.innerHTML = '<option value="">— No campus referral —</option>';
+  campusData.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    opt.selected = c.id === f.campus_id;
+    campusSel.appendChild(opt);
+  });
+  document.getElementById('fu-campus-msg').innerHTML = '';
+
+  // Populate assignee dropdown
+  const sel = document.getElementById('fu-modal-assignee');
+  sel.innerHTML = '<option value="">Unassigned</option>';
+  volData.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.id;
+    opt.textContent = v.name;
+    opt.selected = v.id === f.assigned_to_id;
+    sel.appendChild(opt);
+  });
+
+  // Status buttons
+  Object.keys(STATUS_LABELS).forEach(s => {
+    const btn = document.getElementById(`fu-status-btn-${s}`);
+    if (btn) {
+      btn.style.background = s === f.status ? 'var(--text)' : '';
+      btn.style.color = s === f.status ? 'var(--bg)' : '';
+      btn.style.borderColor = s === f.status ? 'var(--text)' : '';
+    }
+  });
+  document.getElementById('fu-status-msg').innerHTML = '';
+  document.getElementById('fu-contact-msg').innerHTML = '';
+  document.getElementById('fu-contact-note').value = '';
+
+  // Load contact history
+  await loadContactHistory(personId);
+
+  document.getElementById('fu-modal').classList.remove('hidden');
+}
+
+async function saveCampus() {
+  if (!fuCurrentPersonId) return;
+  const sel = document.getElementById('fu-modal-campus');
+  const campus_id = sel.value;
+  const campus_name = campus_id ? campusData.find(c => c.id === campus_id)?.name || '' : '';
+  const msg = document.getElementById('fu-campus-msg');
+  msg.innerHTML = '<span class="spinner"></span> Saving...';
+
+  try {
+    // Update follow-up record
+    const f = fuData.find(x => x.person_id === fuCurrentPersonId);
+    await fetch('/api/followups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        person_id: fuCurrentPersonId,
+        name: f?.name || '',
+        phone: f?.phone || '',
+        email: f?.email || '',
+        family: f?.family || [],
+        milestones: f?.milestones || [],
+        campus_id,
+        campus_name,
+        changed_by: getRecorderName(),
+      }),
+    });
+
+    // Sync to PCO if a campus is selected
+    if (campus_id) {
+      await fetch(`/api/people/${fuCurrentPersonId}/campus`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campus_id }),
+      });
+    }
+
+    await loadFollowups();
+    await writeAuditLocal('campus_assigned', fuCurrentPersonId, campus_name);
+    msg.innerHTML = campus_id
+      ? `<span style="font-size:12px;color:var(--accent-text);"><i class="ti ti-check"></i> Assigned to ${esc(campus_name)} · synced to PCO</span>`
+      : `<span style="font-size:12px;color:var(--text-muted);">Campus referral cleared</span>`;
+  } catch(e) {
+    msg.innerHTML = `<span style="font-size:12px;color:var(--danger-text);">${esc(e.message)}</span>`;
+  }
+}
+
+function writeAuditLocal(action, personId, detail) {
+  // Non-critical local note — main audit happens server-side
+  console.log(`[audit] ${action} ${personId} ${detail} by ${getRecorderName()}`);
+}
+
+async function saveContactInfo() {
+  if (!fuCurrentPersonId) return;
+  const phone = document.getElementById('fu-edit-phone').value.trim();
+  const email = document.getElementById('fu-edit-email').value.trim();
+  const msg = document.getElementById('fu-contact-info-msg');
+  msg.innerHTML = '<span class="spinner"></span> Saving to PCO...';
+
+  try {
+    const f = fuData.find(x => x.person_id === fuCurrentPersonId);
+
+    // Update phone in PCO
+    if (phone && phone !== (f?.phone || '')) {
+      await fetch('/api/people/' + fuCurrentPersonId + '/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, email }),
+      }).then(r => r.json());
+    } else if (email && email !== (f?.email || '')) {
+      await fetch('/api/people/' + fuCurrentPersonId + '/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, email }),
+      }).then(r => r.json());
+    } else {
+      await fetch('/api/people/' + fuCurrentPersonId + '/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, email }),
+      }).then(r => r.json());
+    }
+
+    // Update local follow-up record
+    await fetch('/api/followups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        person_id: fuCurrentPersonId,
+        name: f?.name || '',
+        phone,
+        email,
+        family: f?.family || [],
+        milestones: f?.milestones || [],
+        changed_by: getRecorderName(),
+      }),
+    });
+
+    await loadFollowups();
+    msg.innerHTML = `<span style="font-size:12px;color:var(--accent-text);">
+      <i class="ti ti-check" aria-hidden="true"></i> Saved to PCO</span>`;
+  } catch(e) {
+    msg.innerHTML = `<span style="font-size:12px;color:var(--danger-text);">${esc(e.message)}</span>`;
+  }
+}
+
+function closeFuModal() {
+  document.getElementById('fu-modal').classList.add('hidden');
+  fuCurrentPersonId = null;
+}
+
+async function saveAssignment() {
+  if (!fuCurrentPersonId) return;
+  const sel = document.getElementById('fu-modal-assignee');
+  const volId = sel.value;
+  const vol = volData.find(v => v.id === volId);
+  try {
+    await fetch(`/api/followups/${fuCurrentPersonId}/assign`, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        volunteer_id: volId,
+        volunteer_name: vol?.name || '',
+        changed_by: getRecorderName(),
+      }),
+    });
+    await loadFollowups();
+    const f = fuData.find(x => x.person_id === fuCurrentPersonId);
+    if (f) {
+      // Update status buttons
+      Object.keys(STATUS_LABELS).forEach(s => {
+        const btn = document.getElementById(`fu-status-btn-${s}`);
+        if (btn) {
+          btn.style.background = s === f.status ? 'var(--text)' : '';
+          btn.style.color = s === f.status ? 'var(--bg)' : '';
+          btn.style.borderColor = s === f.status ? 'var(--text)' : '';
+        }
+      });
+    }
+    document.getElementById('fu-status-msg').innerHTML =
+      `<span style="font-size:12px;color:var(--accent-text);">✓ Assigned to ${esc(vol?.name || 'no one')}</span>`;
+  } catch(e) {}
+}
+
+async function setFuStatus(status) {
+  if (!fuCurrentPersonId) return;
+  try {
+    await fetch(`/api/followups/${fuCurrentPersonId}/status`, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, changed_by: getRecorderName() }),
+    });
+    Object.keys(STATUS_LABELS).forEach(s => {
+      const btn = document.getElementById(`fu-status-btn-${s}`);
+      if (btn) {
+        btn.style.background = s === status ? 'var(--text)' : '';
+        btn.style.color = s === status ? 'var(--bg)' : '';
+        btn.style.borderColor = s === status ? 'var(--text)' : '';
+      }
+    });
+    document.getElementById('fu-status-msg').innerHTML =
+      `<span style="font-size:12px;color:var(--accent-text);">✓ Status updated</span>`;
+    await loadFollowups();
+  } catch(e) {
+    document.getElementById('fu-status-msg').innerHTML =
+      `<span style="font-size:12px;color:var(--danger-text);">${esc(e.message)}</span>`;
+  }
+}
+
+async function logContact() {
+  if (!fuCurrentPersonId) return;
+  const method = document.getElementById('fu-contact-method').value;
+  const outcome = document.getElementById('fu-contact-outcome').value;
+  const note = document.getElementById('fu-contact-note').value.trim();
+  const msg = document.getElementById('fu-contact-msg');
+  msg.innerHTML = '<span class="spinner"></span>';
+  try {
+    await fetch(`/api/followups/${fuCurrentPersonId}/contact`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ method, outcome, note, logged_by: getRecorderName() }),
+    });
+    document.getElementById('fu-contact-note').value = '';
+    msg.innerHTML = `<span style="font-size:12px;color:var(--accent-text);">✓ Contact attempt logged</span>`;
+    await loadContactHistory(fuCurrentPersonId);
+    await loadFollowups();
+  } catch(e) {
+    msg.innerHTML = `<span style="font-size:12px;color:var(--danger-text);">${esc(e.message)}</span>`;
+  }
+}
+
+async function loadContactHistory(personId) {
+  const hist = document.getElementById('fu-contact-history');
+  hist.innerHTML = '<span class="spinner"></span>';
+  try {
+    const r = await fetch(`/api/followups/${personId}/contacts`).then(r => r.json());
+    const logs = r.contacts || [];
+    const METHOD_ICONS = { call:'📞', text:'💬', visit:'🏠', other:'📝' };
+    const OUTCOME_LABELS = {
+      reached:'✅ Reached', no_answer:'📵 No answer', voicemail:'📬 Voicemail',
+      wrong_number:'❌ Wrong number', not_interested:'🚫 Not interested', callback:'🔄 Callback',
+    };
+    if (!logs.length) {
+      hist.innerHTML = '<p style="font-size:13px;color:var(--text-faint);">No contact attempts yet.</p>';
+      return;
+    }
+    hist.innerHTML = logs.map(l => `
+      <div style="padding:8px 0;border-bottom:0.5px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <p style="font-size:13px;font-weight:500;">
+            ${METHOD_ICONS[l.method]||'📝'} ${OUTCOME_LABELS[l.outcome]||l.outcome}
+          </p>
+          <p style="font-size:11px;color:var(--text-faint);white-space:nowrap;margin-left:8px;">
+            ${new Date(l.timestamp).toLocaleString()}
+          </p>
+        </div>
+        ${l.note ? `<p style="font-size:12px;color:var(--text-muted);margin-top:2px;">${esc(l.note)}</p>` : ''}
+        ${l.logged_by ? `<p style="font-size:11px;color:var(--text-faint);">by ${esc(l.logged_by)}</p>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    hist.innerHTML = `<p style="font-size:13px;color:var(--danger-text);">${esc(e.message)}</p>`;
+  }
+}
+
+// ── Badge assignment error handler ───────────────────────────────────────────
+function badgeAssignError(r) {
+  // Returns a formatted error string from a failed /api/badges/assign response
+  if (r.code === 'WRONG_BADGE_TYPE') {
+    return `<div class="alert alert-danger">
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      <strong>Wrong badge type.</strong> Only WI- badges can be assigned to walk-ins.
+      FC badges are pre-assigned to registered attendees. Please use a WI badge instead.
+    </div>`;
+  }
+  if (r.code === 'ALREADY_ASSIGNED') {
+    return `<div class="alert alert-danger">
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      <strong>Badge already taken.</strong> ${esc(r.error)}
+      <br><span style="font-size:12px;margin-top:4px;display:block;">
+        Please grab a new WI badge from the welcome table.
+      </span>
+    </div>`;
+  }
+  return `<div class="alert alert-danger">
+    <i class="ti ti-alert-circle" aria-hidden="true"></i> ${esc(r.error || 'Badge assignment failed')}
+  </div>`;
+}
+
+async function boot() {
+  applyStoredTheme();
+  await checkAuth();
+  await checkHealth();
+  checkFirstLaunch();
+  showInstallBanner();
+  const cfg = await fetch('/api/config').then(r => r.json());
+  lockedFormId = (cfg.locked_form_id && cfg.locked_form_id.trim()) ? cfg.locked_form_id.trim() : null;
+
+  if (lockedFormId) {
+    document.getElementById('form-selector-card').style.display = 'none';
+    selectedFormId = lockedFormId;
+    document.getElementById('form-status').textContent = 'Loading form ' + lockedFormId + '...';
+    await loadAttendees();
+  } else {
+    await loadForms();
+  loadCampuses(); // pre-fetch campuses now that we're authenticated
+  }
+  loadCampuses(); // pre-fetch in background so modal is instant
+}
+
+async function checkHealth() {
+  try {
+    const d = await fetch('/api/health').then(r => r.json());
+    const el = document.getElementById('conn-status');
+    if (d.ok && d.pco_configured) { el.textContent = 'PCO connected'; el.classList.add('ok'); }
+    else { el.textContent = 'PCO not configured'; }
+  } catch { document.getElementById('conn-status').textContent = 'Server error'; }
+}
+
+async function loadForms() {
+  const sel = document.getElementById('form-select');
+  const status = document.getElementById('form-status');
+  sel.innerHTML = '<option value="">Loading...</option>';
+  try {
+    const d = await fetch('/api/forms').then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    sel.innerHTML = '<option value="">— select a form —</option>';
+    d.forms.forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.id;
+      o.textContent = f.name + (f.submission_count ? ` (${f.submission_count})` : '');
+      sel.appendChild(o);
+    });
+    status.textContent = d.forms.length + ' form(s) found';
+  } catch (err) {
+    sel.innerHTML = '<option value="">— error —</option>';
+    status.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function onFormChange() {
+  selectedFormId = document.getElementById('form-select').value || null;
+  attendees = [];
+  document.getElementById('attendee-panel').innerHTML = '';
+  document.getElementById('scan-input').value = '';
+  document.getElementById('search-suggestions').innerHTML = '';
+  if (selectedFormId) await loadAttendees();
+}
+
+async function loadAttendees() {
+  const status = document.getElementById('form-status');
+  status.innerHTML = '<span class="spinner"></span> Loading attendees...';
+  try {
+    const d = await fetch(`/api/forms/${selectedFormId}/submissions`).then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    attendees = d.submissions;
+    status.textContent = attendees.length + ' attendee(s) loaded';
+    renderAllList();
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['scan','all','walkin','dash','sched','followup'].forEach(t => {
+    document.getElementById('view-'+t).style.display = t===name ? 'block' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+  });
+  if (name==='all') renderAllList();
+  if (name==='scan') document.getElementById('scan-input').focus();
+  if (name==='dash') loadDashboard();
+  if (name==='followup') { loadFollowups(); loadVolunteers().then(() => autoRegisterVolunteer()); loadCampuses(); setFuView('list'); }
+  if (name==='walkin') { resetWiForm(); loadLinkedBadges(); loadPendingSync(); }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+function onSearchInput() {
+  const q = document.getElementById('scan-input').value.trim().toLowerCase();
+  const box = document.getElementById('search-suggestions');
+  if (!q || q.length < 2) { box.innerHTML=''; return; }
+  const matches = attendees.filter(a => (a.name||'').toLowerCase().includes(q)).slice(0,6);
+  if (!matches.length) { box.innerHTML=''; return; }
+  box.innerHTML = matches.map(a => `
+    <div class="suggest-item" onclick="selectAttendee('${a.person_id}','${a.submission_id}')">
+      <div class="avatar avatar-sm">${initials(a)}</div>
+      <div>
+        <p style="font-size:14px; font-weight:500;">${esc(a.name)}</p>
+        <p style="font-size:12px; color:var(--text-faint);">Registered ${a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}</p>
+      </div>
+    </div>`).join('');
+}
+
+async function doLookup() {
+  const q = document.getElementById('scan-input').value.trim();
+  if (!q) return;
+
+  // Check if it looks like a badge code (FC- or WI-)
+  const isBadgeCode = /^(FC|WI)-\d+$/i.test(q);
+  if (isBadgeCode) {
+    const r = await fetch(`/api/badges/${encodeURIComponent(q.toUpperCase())}`).then(r => r.json());
+    if (r.linked) {
+      const a = attendees.find(att => att.person_id === r.person_id);
+      selectAttendee(r.person_id, a?.submission_id || null);
+      return;
+    } else {
+      // Badge not linked — show offline capture panel
+      showOfflineCapture(q.toUpperCase());
+      return;
+    }
+  }
+
+  // Fall back to attendee list search
+  const byId = attendees.find(a => a.person_id === q || a.submission_id === q);
+  if (byId) { selectAttendee(byId.person_id, byId.submission_id); return; }
+  const byName = attendees.find(a => (a.name||'').toLowerCase() === q.toLowerCase());
+  if (byName) { selectAttendee(byName.person_id, byName.submission_id); return; }
+  document.getElementById('attendee-panel').innerHTML = `
+    <div class="alert alert-danger"><i class="ti ti-alert-circle" aria-hidden="true"></i>
+    No attendee found for "<strong>${esc(q)}</strong>".</div>`;
+}
+
+function selectAttendee(personId, submissionId) {
+  document.getElementById('search-suggestions').innerHTML = '';
+  document.getElementById('scan-input').value = '';
+  loadPersonPanel(personId, submissionId);
+}
+
+async function loadPersonPanel(personId, submissionId) {
+  if (!personId) return;
+  const panel = document.getElementById('attendee-panel');
+  panel.innerHTML = `<div class="card"><p style="color:var(--text-muted);font-size:14px;"><span class="spinner"></span> Loading from Planning Center...</p></div>`;
+  try {
+    const calls = [
+      fetch(`/api/people/${personId}`).then(r => r.json()),
+      fetch(`/api/people/${personId}/notes`).then(r => r.json()),
+    ];
+    if (submissionId) calls.push(fetch(`/api/submissions/${submissionId}/responses`).then(r => r.json()));
+    const [person, notesData, responsesData] = await Promise.all(calls);
+    if (person.error) throw new Error(person.error);
+    renderPersonPanel(person, notesData.notes || [], responsesData?.responses || []);
+  } catch (err) {
+    panel.innerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
+  }
+}
+
+function renderPersonPanel(person, notes, responses) {
+  const panel = document.getElementById('attendee-panel');
+  const avatarHtml = person.avatar ? `<img src="${esc(person.avatar)}" alt="" />` : initials(person);
+
+  const notesHtml = notes.length
+    ? notes.slice().reverse().map(n => `
+        <div class="note-item">
+          <p class="note-time">${new Date(n.created_at).toLocaleString()}</p>
+          <p class="note-text">${esc(n.note)}</p>
+        </div>`).join('')
+    : `<p style="font-size:13px;color:var(--text-faint);padding:10px 0;">No notes yet.</p>`;
+
+  const emailHtml = (person.emails||[]).map(e =>
+    `<div class="detail-row"><i class="ti ti-mail" aria-hidden="true"></i><span>${esc(e)}</span></div>`).join('');
+  const phoneHtml = (person.phones||[]).map(p =>
+    `<div class="detail-row"><i class="ti ti-phone" aria-hidden="true"></i><span>${esc(p)}</span></div>`).join('');
+
+  const responsesHtml = responses.length ? `
+    <div style="border-top:0.5px solid var(--border); padding-top:14px; margin-top:14px;">
+      <p class="label">Form responses</p>
+      ${responses.map(r => `
+        <div class="response-row">
+          <span class="response-label">${esc(r.label)}</span>
+          <span class="response-value">${esc(r.value)}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  panel.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <div class="avatar">${avatarHtml}</div>
+        <div style="flex:1;">
+          <p style="font-size:18px;font-weight:500;">${esc(person.first_name)} ${esc(person.last_name)}</p>
+          <p style="font-size:12px;color:var(--text-faint);">PCO ID: ${person.id}</p>
+        </div>
+        <a href="https://people.planningcenteronline.com/people/${person.id}" target="_blank" rel="noopener"
+           style="color:var(--info-text);font-size:12px;text-decoration:none;">
+          <i class="ti ti-external-link" aria-hidden="true"></i> PCO
+        </a>
+      </div>
+
+      ${emailHtml}${phoneHtml}
+
+      ${responsesHtml}
+
+      <div style="display:flex;justify-content:center;margin:16px 0;" id="qr-wrap-${person.id}"></div>
+
+      <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px;">
+        <p class="label" style="margin-bottom:10px;">Spiritual milestones</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <button id="btn-baptized-${person.id}" onclick="toggleMilestone('${person.id}','baptized','${esc(person.first_name)} ${esc(person.last_name)}')"
+            class="milestone-btn" data-active="false"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                   padding:14px 8px;border-radius:var(--radius-lg);text-align:center;
+                   border:0.5px solid var(--border-strong);background:var(--surface);
+                   cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);line-height:1.3;">
+            <i class="ti ti-droplet" aria-hidden="true" style="font-size:22px;color:var(--text-faint);"></i>
+            <span>Baptized in Jesus Name</span>
+          </button>
+          <button id="btn-holyghost-${person.id}" onclick="toggleMilestone('${person.id}','holyghost','${esc(person.first_name)} ${esc(person.last_name)}')"
+            class="milestone-btn" data-active="false"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                   padding:14px 8px;border-radius:var(--radius-lg);text-align:center;
+                   border:0.5px solid var(--border-strong);background:var(--surface);
+                   cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);line-height:1.3;">
+            <i class="ti ti-flame" aria-hidden="true" style="font-size:22px;color:var(--text-faint);"></i>
+            <span>Filled with the Holy Ghost</span>
+          </button>
+          <button id="btn-biblestudy-${person.id}" onclick="toggleMilestone('${person.id}','biblestudy','${esc(person.first_name)} ${esc(person.last_name)}')"
+            class="milestone-btn" data-active="false"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                   padding:14px 8px;border-radius:var(--radius-lg);text-align:center;
+                   border:0.5px solid var(--border-strong);background:var(--surface);
+                   cursor:pointer;font-family:inherit;font-size:13px;color:var(--text);line-height:1.3;">
+            <i class="ti ti-book" aria-hidden="true" style="font-size:22px;color:var(--text-faint);"></i>
+            <span>Requested Bible Study</span>
+          </button>
+        </div>
+        <div id="milestone-msg-${person.id}" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="border-top:0.5px solid var(--border);padding-top:14px;">
+        <p class="label">Add note (saves to PCO)</p>
+        <textarea id="note-ta-${person.id}" rows="3"
+          placeholder="Prayer request, first-time visitor, follow-up needed..."
+          style="resize:vertical;margin-bottom:8px;"></textarea>
+        <button class="btn" onclick="submitNote('${person.id}','${esc(person.first_name)} ${esc(person.last_name)}')">
+          Save to Planning Center
+        </button>
+        <div id="note-msg-${person.id}" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:14px;">
+        <p class="label">Notes from PCO (${notes.length})</p>
+        <div id="notes-list-${person.id}">${notesHtml}</div>
+      </div>
+    </div>`;
+
+  try {
+    const wrap = document.getElementById(`qr-wrap-${person.id}`);
+    new QRCode(wrap, { text: person.id, width: 112, height: 112, correctLevel: QRCode.CorrectLevel.M });
+  } catch(e) {}
+
+  // Set milestone button states from existing notes
+  const hasBaptized = notes.some(n => n.note.includes('[MILESTONE:BAPTIZED]'));
+  const hasHolyGhost = notes.some(n => n.note.includes('[MILESTONE:HOLYGHOST]'));
+  const hasBibleStudy = notes.some(n => n.note.includes('[MILESTONE:BIBLESTUDY]'));
+  setMilestoneBtn(`btn-baptized-${person.id}`, hasBaptized, 'var(--info-bg)', 'var(--info-text)');
+  setMilestoneBtn(`btn-holyghost-${person.id}`, hasHolyGhost, 'var(--warning-bg)', 'var(--warning-text)');
+  setMilestoneBtn(`btn-biblestudy-${person.id}`, hasBibleStudy, 'var(--accent-bg)', 'var(--accent-text)');
+}
+
+// ── Milestones ────────────────────────────────────────────────────────────────
+function setMilestoneBtn(btnId, active, bgColor, textColor) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.dataset.active = active ? 'true' : 'false';
+  if (active) {
+    btn.style.background = bgColor;
+    btn.style.borderColor = textColor;
+    btn.style.color = textColor;
+    btn.querySelector('i').style.color = textColor;
+    if (!btn.querySelector('.check-icon')) {
+      const chk = document.createElement('i');
+      chk.className = 'ti ti-check check-icon';
+      chk.setAttribute('aria-hidden', 'true');
+      chk.style.cssText = 'font-size:14px;margin-left:auto;flex-shrink:0;';
+      btn.appendChild(chk);
+    }
+  } else {
+    btn.style.background = 'var(--surface)';
+    btn.style.borderColor = 'var(--border-strong)';
+    btn.style.color = 'var(--text)';
+    btn.querySelector('i:not(.check-icon)').style.color = 'var(--text-faint)';
+    const chk = btn.querySelector('.check-icon');
+    if (chk) chk.remove();
+  }
+}
+
+async function toggleMilestone(personId, type, name) {
+  const btnId = type === 'baptized' ? `btn-baptized-${personId}`
+    : type === 'holyghost' ? `btn-holyghost-${personId}`
+    : `btn-biblestudy-${personId}`;
+  const btn = document.getElementById(btnId);
+  const msgEl = document.getElementById(`milestone-msg-${personId}`);
+  const isActive = btn.dataset.active === 'true';
+  const bgColor = type === 'baptized' ? 'var(--info-bg)'
+    : type === 'holyghost' ? 'var(--warning-bg)'
+    : 'var(--accent-bg)';
+  const textColor = type === 'baptized' ? 'var(--info-text)'
+    : type === 'holyghost' ? 'var(--warning-text)'
+    : 'var(--accent-text)';
+  const label = type === 'baptized' ? 'Baptized in Jesus Name'
+    : type === 'holyghost' ? 'Filled with the Holy Ghost'
+    : 'Requested Bible Study';
+  const tag = type === 'baptized' ? '[MILESTONE:BAPTIZED]'
+    : type === 'holyghost' ? '[MILESTONE:HOLYGHOST]'
+    : '[MILESTONE:BIBLESTUDY]';
+
+  if (isActive) {
+    // Already recorded — just show a message, don't duplicate
+    msgEl.innerHTML = `<p style="font-size:12px;color:var(--text-faint);">Already recorded. See notes below.</p>`;
+    setTimeout(() => { msgEl.innerHTML = ''; }, 2500);
+    return;
+  }
+
+  btn.disabled = true;
+  msgEl.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const recorder = getRecorderName();
+    const prefix = recorder ? `[${recorder}] ` : '';
+    const noteText = `${prefix}${tag} ${name} — ${label}`;
+
+    const d = await fetch(`/api/people/${personId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: noteText }),
+    }).then(r => r.json());
+
+    if (d.error) throw new Error(d.error);
+
+    setMilestoneBtn(btnId, true, bgColor, textColor);
+    msgEl.innerHTML = `<span class="alert alert-success" style="display:inline-block;padding:6px 12px;font-size:12px;">
+      <i class="ti ti-check" aria-hidden="true"></i> ${label} recorded for ${esc(name)}</span>`;
+    setTimeout(() => { msgEl.innerHTML = ''; }, 3000);
+
+    // Refresh notes list
+    const nd = await fetch(`/api/people/${personId}/notes`).then(r => r.json());
+    const notesHtml = (nd.notes||[]).length
+      ? (nd.notes||[]).slice().reverse().map(n => `
+          <div class="note-item">
+            <p class="note-time">${new Date(n.created_at).toLocaleString()}</p>
+            <p class="note-text">${esc(n.note)}</p>
+          </div>`).join('')
+      : `<p style="font-size:13px;color:var(--text-faint);padding:10px 0;">No notes yet.</p>`;
+    document.getElementById(`notes-list-${personId}`).innerHTML = notesHtml;
+
+  } catch(err) {
+    msgEl.innerHTML = `<span class="alert alert-danger" style="display:inline-block;font-size:12px;">${esc(err.message)}</span>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function submitNote(personId, name) {
+  const ta = document.getElementById(`note-ta-${personId}`);
+  const msgEl = document.getElementById(`note-msg-${personId}`);
+  const text = ta.value.trim();
+  if (!text) return;
+  msgEl.innerHTML = '<span class="spinner"></span> Saving...';
+  try {
+    const recorder = getRecorderName();
+    const prefix = recorder ? `[${recorder}] ` : '';
+    const d = await fetch(`/api/people/${personId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: prefix + text }),
+    }).then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    ta.value = '';
+    msgEl.innerHTML = `<span class="alert alert-success" style="display:inline-block;padding:6px 12px;">
+      <i class="ti ti-check" aria-hidden="true"></i> Saved to PCO for ${esc(name)}</span>`;
+    const nd = await fetch(`/api/people/${personId}/notes`).then(r => r.json());
+    const notesHtml = (nd.notes||[]).length
+      ? (nd.notes||[]).slice().reverse().map(n => `
+          <div class="note-item">
+            <p class="note-time">${new Date(n.created_at).toLocaleString()}</p>
+            <p class="note-text">${esc(n.note)}</p>
+          </div>`).join('')
+      : `<p style="font-size:13px;color:var(--text-faint);padding:10px 0;">No notes yet.</p>`;
+    document.getElementById(`notes-list-${personId}`).innerHTML = notesHtml;
+  } catch (err) {
+    msgEl.innerHTML = `<span class="alert alert-danger" style="display:inline-block;">${esc(err.message)}</span>`;
+  }
+}
+
+// ── All attendees ─────────────────────────────────────────────────────────────
+function renderAllList() {
+  const q = (document.getElementById('all-search').value||'').toLowerCase();
+  const filtered = attendees
+    .filter(a => (a.name||'').toLowerCase().includes(q))
+    .sort((a, b) => {
+      const la = (a.last_name||(a.name||'').split(' ').slice(-1)[0]||'').toLowerCase();
+      const lb = (b.last_name||(b.name||'').split(' ').slice(-1)[0]||'').toLowerCase();
+      if (la !== lb) return la.localeCompare(lb);
+      const fa = (a.first_name||(a.name||'').split(' ')[0]||'').toLowerCase();
+      const fb = (b.first_name||(b.name||'').split(' ')[0]||'').toLowerCase();
+      return fa.localeCompare(fb);
+    });
+  document.getElementById('all-count').textContent = filtered.length + ' attendee(s)';
+  const list = document.getElementById('all-list');
+  if (!attendees.length) {
+    list.innerHTML = `<div class="empty-state"><i class="ti ti-users" aria-hidden="true"></i>Select a form to load attendees.</div>`; return;
+  }
+  if (!filtered.length) { list.innerHTML = `<div class="empty-state">No matches.</div>`; return; }
+  list.innerHTML = filtered.map(a => `
+    <div class="attendee-row" onclick="showTab('scan');selectAttendee('${a.person_id}','${a.submission_id}')">
+      <div class="avatar avatar-sm">${initials(a)}</div>
+      <div style="flex:1;">
+        <p style="font-size:14px;font-weight:500;">${esc(a.name)}</p>
+        <p style="font-size:12px;color:var(--text-faint);">${a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}</p>
+      </div>
+      <i class="ti ti-chevron-right" aria-hidden="true" style="color:var(--text-faint);"></i>
+    </div>`).join('');
+}
+
+// ── Walk-in registration ─────────────────────────────────────────────────────
+// ── Walk-ins (merged Register + Link Badge) ──────────────────────────────────
+let wiSelectedPersonId = null;
+let wiSelectedPersonName = null;
+let wiSearchTimer = null;
+let wiVideoStream = null;
+let wiScanInterval = null;
+
+function resetWiForm() {
+  wiSelectedPersonId = null;
+  wiSelectedPersonName = null;
+  ['wi-badge-input','wi-search-input','wi-first','wi-last','wi-phone','wi-email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['wi-badge-status','wi-search-msg','wi-create-msg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+  document.getElementById('wi-search-results').innerHTML = '';
+  document.getElementById('wi-search-selected').style.display = 'none';
+  document.getElementById('wi-link-btn').style.display = 'none';
+  document.getElementById('wi-step-search').style.display = 'block';
+  document.getElementById('wi-step-create').style.display = 'none';
+  stopWiCamera();
+  document.getElementById('wi-badge-input').focus();
+}
+
+async function checkWiBadge() {
+  const bid = document.getElementById('wi-badge-input').value.trim().toUpperCase();
+  const statusEl = document.getElementById('wi-badge-status');
+  if (!bid || bid.length < 4) { statusEl.textContent = ''; return; }
+  if (bid.startsWith('FC-')) {
+    statusEl.innerHTML = `<span style="color:var(--danger-text);">
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      FC badges belong to pre-registered attendees — use a WI badge for walk-ins.
+    </span>`;
+    return;
+  }
+  if (!bid.startsWith('WI-')) {
+    statusEl.innerHTML = '<span style="color:var(--danger-text);">Badge must start with WI-</span>';
+    return;
+  }
+  try {
+    const r = await fetch(`/api/badges/${encodeURIComponent(bid)}`).then(r => r.json());
+    if (r.linked) {
+      // Look up who it's assigned to for a helpful message
+      let name = r.person_id;
+      try {
+        const p = await fetch(`/api/people/${r.person_id}`).then(r => r.json());
+        if (p.name) name = p.name;
+      } catch(e) {}
+      statusEl.innerHTML = `<span style="color:var(--danger-text);">
+        <i class="ti ti-alert-circle" aria-hidden="true"></i>
+        Already assigned to <strong>${esc(name)}</strong>. Please use a different WI badge.
+      </span>`;
+    } else {
+      statusEl.innerHTML = `<span style="color:var(--accent-text);">✓ Available</span>`;
+    }
+  } catch(e) {}
+}
+
+function searchWiPerson() {
+  clearTimeout(wiSearchTimer);
+  const q = document.getElementById('wi-search-input').value.trim();
+  const results = document.getElementById('wi-search-results');
+  const selected = document.getElementById('wi-search-selected');
+  const linkBtn = document.getElementById('wi-link-btn');
+
+  wiSelectedPersonId = null;
+  wiSelectedPersonName = null;
+  selected.style.display = 'none';
+  linkBtn.style.display = 'none';
+
+  if (q.length < 2) { results.innerHTML = ''; return; }
+
+  wiSearchTimer = setTimeout(async () => {
+    results.innerHTML = '<span class="spinner"></span>';
+    try {
+      const d = await fetch(`/api/people/search?q=${encodeURIComponent(q)}`).then(r => r.json());
+      if (!d.people || !d.people.length) {
+        results.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:6px 0;">
+          No one found in PCO. Use "Not in PCO — create new" below.</p>`;
+        return;
+      }
+      results.innerHTML = d.people.map(p => `
+        <div onclick="selectWiPerson('${p.id}','${esc(p.name)}')"
+          style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;
+                 border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:4px;background:var(--surface);">
+          <div class="avatar avatar-sm">${((p.first_name[0]||'')+(p.last_name[0]||'')).toUpperCase()}</div>
+          <div>
+            <p style="font-size:14px;font-weight:500;">${esc(p.name)}</p>
+            <p style="font-size:11px;color:var(--text-faint);">PCO ID: ${p.id}</p>
+          </div>
+        </div>`).join('');
+    } catch(e) {
+      results.innerHTML = `<p style="font-size:13px;color:var(--danger-text);">${esc(e.message)}</p>`;
+    }
+  }, 300);
+}
+
+function selectWiPerson(personId, name) {
+  wiSelectedPersonId = personId;
+  wiSelectedPersonName = name;
+  document.getElementById('wi-search-results').innerHTML = '';
+  document.getElementById('wi-search-input').value = '';
+  document.getElementById('wi-search-selected').style.display = 'block';
+  document.getElementById('wi-selected-name').textContent = name;
+  document.getElementById('wi-selected-id').textContent = 'PCO ID: ' + personId;
+  document.getElementById('wi-link-btn').style.display = 'block';
+}
+
+async function wiLinkExisting() {
+  if (!wiSelectedPersonId) return;
+  const badge = document.getElementById('wi-badge-input').value.trim().toUpperCase();
+  const msg = document.getElementById('wi-search-msg');
+  msg.innerHTML = '<span class="spinner"></span> Linking...';
+
+  try {
+    if (badge) {
+      if (!badge.startsWith('WI-')) {
+        msg.innerHTML = '<div class="alert alert-danger"><i class="ti ti-alert-circle" aria-hidden="true"></i> Only WI- badges can be assigned. FC badges belong to pre-registered attendees.</div>';
+        return;
+      }
+      const assignRes = await fetch('/api/badges/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badge_id: badge, person_id: wiSelectedPersonId }),
+      }).then(r => r.json());
+      if (assignRes.error) {
+        msg.innerHTML = badgeAssignError(assignRes);
+        return;
+      }
+    }
+
+    // Add to attendees if not already there
+    if (!attendees.find(a => a.person_id === wiSelectedPersonId)) {
+      attendees.push({
+        submission_id: null,
+        person_id: wiSelectedPersonId,
+        name: wiSelectedPersonName,
+        first_name: wiSelectedPersonName.split(' ')[0] || '',
+        last_name: wiSelectedPersonName.split(' ').slice(-1)[0] || '',
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    const badgeNote = badge ? ` · Badge <strong>${esc(badge)}</strong> linked` : '';
+    msg.innerHTML = `<div class="alert alert-success">
+      <i class="ti ti-check" aria-hidden="true"></i>
+      <strong>${esc(wiSelectedPersonName)}</strong> linked${badgeNote}.
+      <a href="#" onclick="showTab('scan');selectAttendee('${wiSelectedPersonId}',null);return false;"
+         style="color:var(--info-text);margin-left:8px;">Open profile →</a>
+    </div>`;
+    loadLinkedBadges();
+    resetWiForm();
+  } catch(err) {
+    msg.innerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
+  }
+}
+
+function showWiCreateForm() {
+  document.getElementById('wi-step-search').style.display = 'none';
+  document.getElementById('wi-step-create').style.display = 'block';
+  const q = document.getElementById('wi-search-input').value.trim();
+  if (q.includes(' ')) {
+    const parts = q.split(' ');
+    document.getElementById('wi-first').value = parts[0];
+    document.getElementById('wi-last').value = parts.slice(1).join(' ');
+  } else if (q) {
+    document.getElementById('wi-first').value = q;
+  }
+  document.getElementById('wi-first').focus();
+}
+
+function hideWiCreateForm() {
+  document.getElementById('wi-step-create').style.display = 'none';
+  document.getElementById('wi-step-search').style.display = 'block';
+  document.getElementById('wi-search-input').focus();
+}
+
+async function wiCreateNew() {
+  const first = document.getElementById('wi-first').value.trim();
+  const last  = document.getElementById('wi-last').value.trim();
+  const email = document.getElementById('wi-email').value.trim();
+  const phone = document.getElementById('wi-phone').value.trim();
+  const badge = document.getElementById('wi-badge-input').value.trim().toUpperCase();
+  const msg   = document.getElementById('wi-create-msg');
+
+  if (!first || !last) {
+    msg.innerHTML = '<div class="alert alert-danger"><i class="ti ti-alert-circle" aria-hidden="true"></i> First and last name are required.</div>';
+    return;
+  }
+  if (badge && !badge.startsWith('WI-')) {
+    msg.innerHTML = '<div class="alert alert-danger">Badge ID must start with WI-</div>';
+    return;
+  }
+
+  msg.innerHTML = '<span class="spinner"></span> Creating in Planning Center...';
+
+  try {
+    const r = await fetch('/api/people/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ first_name: first, last_name: last, email, phone,
+        form_id: selectedFormId, recorded_by: getRecorderName() }),
+    }).then(r => r.json());
+
+    if (r.error) throw new Error(r.error);
+
+    if (badge) {
+      const assignRes = await fetch('/api/badges/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badge_id: badge, person_id: r.person_id }),
+      }).then(r => r.json()).catch(() => ({}));
+      if (assignRes.error) {
+        msg.innerHTML = badgeAssignError(assignRes);
+        return;
+      }
+    }
+
+    attendees.push({
+      submission_id: r.submission_id || null,
+      person_id: r.person_id,
+      name: `${first} ${last}`,
+      first_name: first, last_name: last,
+      created_at: new Date().toISOString(),
+    });
+
+    const badgeNote = badge ? ` · Badge <strong>${esc(badge)}</strong> linked` : '';
+    msg.innerHTML = `<div class="alert alert-success">
+      <i class="ti ti-check" aria-hidden="true"></i>
+      <strong>${esc(first)} ${esc(last)}</strong> created${badgeNote}.
+      <a href="#" onclick="showTab('scan');selectAttendee('${r.person_id}','${r.submission_id||''}');return false;"
+         style="color:var(--info-text);margin-left:8px;">Open profile →</a>
+    </div>`;
+    loadLinkedBadges();
+  } catch(err) {
+    msg.innerHTML = `<div class="alert alert-danger"><i class="ti ti-alert-circle" aria-hidden="true"></i> ${esc(err.message)}</div>`;
+  }
+}
+
+function startWiCamera() {
+  document.getElementById('wi-cam-area').style.display = 'block';
+  const video = document.getElementById('wi-qr-video');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      wiVideoStream = stream;
+      video.srcObject = stream;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('muted', '');
+      video.play().catch(() => {});
+      wiScanInterval = setInterval(() => {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        const c = document.createElement('canvas');
+        c.width = video.videoWidth; c.height = video.videoHeight;
+        c.getContext('2d').drawImage(video, 0, 0);
+        const img = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+        const code = jsQR(img.data, img.width, img.height);
+        if (code && code.data) {
+          stopWiCamera();
+          document.getElementById('wi-badge-input').value = code.data.toUpperCase();
+          checkWiBadge();
+        }
+      }, 300);
+    })
+    .catch(() => { stopWiCamera(); alert('Camera access denied.'); });
+}
+
+function stopWiCamera() {
+  clearInterval(wiScanInterval);
+  if (wiVideoStream) wiVideoStream.getTracks().forEach(t => t.stop());
+  wiVideoStream = null;
+  const area = document.getElementById('wi-cam-area');
+  if (area) area.style.display = 'none';
+}
+
+// ── Register search-first flow ────────────────────────────────────────────────
+let regSearchTimer = null;
+let regSelectedPersonId = null;
+let regSelectedPersonName = null;
+
+function showRegCreateForm() {
+  document.getElementById('reg-step-search').style.display = 'none';
+  document.getElementById('reg-step-create').style.display = 'block';
+  // Pre-fill name from search if typed
+  const q = document.getElementById('reg-search-input').value.trim();
+  if (q && q.includes(' ')) {
+    const parts = q.split(' ');
+    document.getElementById('reg-first').value = parts[0];
+    document.getElementById('reg-last').value = parts.slice(1).join(' ');
+  } else if (q) {
+    document.getElementById('reg-first').value = q;
+  }
+  setTimeout(() => document.getElementById('reg-badge').focus(), 50);
+}
+
+function hideRegCreateForm() {
+  document.getElementById('reg-step-create').style.display = 'none';
+  document.getElementById('reg-step-search').style.display = 'block';
+  document.getElementById('reg-search-input').focus();
+}
+
+function searchRegPerson() {
+  clearTimeout(regSearchTimer);
+  const q = document.getElementById('reg-search-input').value.trim();
+  const results = document.getElementById('reg-search-results');
+  const selectedDiv = document.getElementById('reg-search-selected');
+  const linkBtn = document.getElementById('reg-link-existing-btn');
+  const badgeDiv = document.getElementById('reg-badge-for-existing');
+
+  // Reset selection when typing
+  regSelectedPersonId = null;
+  regSelectedPersonName = null;
+  selectedDiv.style.display = 'none';
+  linkBtn.style.display = 'none';
+  badgeDiv.style.display = 'none';
+
+  if (q.length < 2) { results.innerHTML = ''; return; }
+
+  regSearchTimer = setTimeout(async () => {
+    results.innerHTML = '<span class="spinner"></span>';
+    try {
+      const d = await fetch(`/api/people/search?q=${encodeURIComponent(q)}`).then(r => r.json());
+      if (!d.people || !d.people.length) {
+        results.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:6px 0;">
+          No one found in PCO. Use "Not in PCO — create new" below.</p>`;
+        return;
+      }
+      results.innerHTML = d.people.map(p => `
+        <div onclick="selectRegPerson('${p.id}','${esc(p.name)}')"
+          style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;
+                 border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:4px;background:var(--surface);">
+          <div class="avatar avatar-sm">${((p.first_name[0]||'')+(p.last_name[0]||'')).toUpperCase()}</div>
+          <div>
+            <p style="font-size:14px;font-weight:500;">${esc(p.name)}</p>
+            <p style="font-size:11px;color:var(--text-faint);">PCO ID: ${p.id}</p>
+          </div>
+        </div>`).join('');
+    } catch(e) {
+      results.innerHTML = `<p style="font-size:13px;color:var(--danger-text);">${esc(e.message)}</p>`;
+    }
+  }, 300);
+}
+
+function selectRegPerson(personId, name) {
+  regSelectedPersonId = personId;
+  regSelectedPersonName = name;
+  document.getElementById('reg-search-results').innerHTML = '';
+  document.getElementById('reg-search-input').value = '';
+  document.getElementById('reg-search-selected').style.display = 'block';
+  document.getElementById('reg-search-selected-name').textContent = name;
+  document.getElementById('reg-search-selected-id').textContent = 'PCO ID: ' + personId;
+  document.getElementById('reg-link-existing-btn').style.display = 'block';
+  document.getElementById('reg-badge-for-existing').style.display = 'block';
+  document.getElementById('reg-existing-badge').focus();
+}
+
+async function linkExistingPerson() {
+  if (!regSelectedPersonId) return;
+  const badge = document.getElementById('reg-existing-badge').value.trim().toUpperCase();
+  const msg = document.getElementById('reg-search-msg');
+
+  msg.innerHTML = '<span class="spinner"></span> Linking...';
+
+  try {
+    if (badge) {
+      if (!badge.startsWith('WI-')) {
+        msg.innerHTML = '<div class="alert alert-danger">Badge ID must start with WI-</div>';
+        return;
+      }
+      await fetch('/api/badges/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badge_id: badge, person_id: regSelectedPersonId }),
+      }).then(r => r.json());
+    }
+
+    // Add to local attendees if not already there
+    if (!attendees.find(a => a.person_id === regSelectedPersonId)) {
+      attendees.push({
+        submission_id: null,
+        person_id: regSelectedPersonId,
+        name: regSelectedPersonName,
+        first_name: regSelectedPersonName.split(' ')[0] || '',
+        last_name: regSelectedPersonName.split(' ').slice(-1)[0] || '',
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    const badgeNote = badge ? ` · Badge <strong>${esc(badge)}</strong> linked` : '';
+    msg.innerHTML = `<div class="alert alert-success">
+      <i class="ti ti-check" aria-hidden="true"></i>
+      <strong>${esc(regSelectedPersonName)}</strong> linked${badgeNote}.
+      <a href="#" onclick="showTab('scan');selectAttendee('${regSelectedPersonId}',null);return false;"
+         style="color:var(--info-text);margin-left:8px;">Open profile →</a>
+    </div>`;
+
+    // Reset
+    regSelectedPersonId = null;
+    regSelectedPersonName = null;
+    document.getElementById('reg-search-selected').style.display = 'none';
+    document.getElementById('reg-link-existing-btn').style.display = 'none';
+    document.getElementById('reg-badge-for-existing').style.display = 'none';
+    document.getElementById('reg-existing-badge').value = '';
+
+  } catch(err) {
+    msg.innerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
+  }
+}
+
+let regVideoStream = null;
+let regScanInterval = null;
+
+function startRegCamera() {
+  document.getElementById('reg-cam-area').style.display = 'block';
+  const video = document.getElementById('reg-qr-video');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      regVideoStream = stream;
+      video.srcObject = stream;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('muted', '');
+      video.play().catch(() => {});
+      regScanInterval = setInterval(() => {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        const c = document.createElement('canvas');
+        c.width = video.videoWidth; c.height = video.videoHeight;
+        c.getContext('2d').drawImage(video,0,0);
+        const img = c.getContext('2d').getImageData(0,0,c.width,c.height);
+        const code = jsQR(img.data, img.width, img.height);
+        if (code && code.data) {
+          stopRegCamera();
+          document.getElementById('reg-badge').value = code.data.toUpperCase();
+          checkRegBadge();
+        }
+      }, 300);
+    })
+    .catch(() => { stopRegCamera(); alert('Camera access denied.'); });
+}
+
+function stopRegCamera() {
+  clearInterval(regScanInterval);
+  if (regVideoStream) regVideoStream.getTracks().forEach(t => t.stop());
+  regVideoStream = null;
+  document.getElementById('reg-cam-area').style.display = 'none';
+}
+
+async function checkRegBadge() {
+  const bid = document.getElementById('reg-badge').value.trim().toUpperCase();
+  const statusEl = document.getElementById('reg-badge-status');
+  if (!bid) { statusEl.textContent = ''; return; }
+  if (bid.startsWith('FC-')) {
+    statusEl.innerHTML = `<span style="color:var(--danger-text);">
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      FC badges belong to pre-registered attendees. Use a WI badge for walk-ins.
+    </span>`;
+    return;
+  }
+  if (!bid.startsWith('WI-')) {
+    statusEl.innerHTML = '<span style="color:var(--danger-text);">Badge must start with WI-</span>';
+    return;
+  }
+  try {
+    const r = await fetch(`/api/badges/${encodeURIComponent(bid)}`).then(r => r.json());
+    if (r.linked) {
+      let name = r.person_id;
+      try {
+        const p = await fetch(`/api/people/${r.person_id}`).then(r => r.json());
+        if (p.name) name = p.name;
+      } catch(e) {}
+      statusEl.innerHTML = `<span style="color:var(--danger-text);">
+        <i class="ti ti-alert-circle" aria-hidden="true"></i>
+        Already assigned to <strong>${esc(name)}</strong>. Please use a different WI badge.
+      </span>`;
+    } else {
+      statusEl.innerHTML = `<span style="color:var(--accent-text);">✓ Available</span>`;
+    }
+  } catch(e) {}
+}
+
+async function registerWalkin() {
+  const first = document.getElementById('reg-first').value.trim();
+  const last  = document.getElementById('reg-last').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const badge = document.getElementById('reg-badge').value.trim().toUpperCase();
+  const msg   = document.getElementById('reg-msg');
+
+  if (!first || !last) {
+    msg.innerHTML = '<div class="alert alert-danger"><i class="ti ti-alert-circle" aria-hidden="true"></i> First and last name are required.</div>';
+    return;
+  }
+
+  if (badge && !badge.startsWith('WI-')) {
+    msg.innerHTML = '<div class="alert alert-danger"><i class="ti ti-alert-circle" aria-hidden="true"></i> Badge ID must start with WI- (e.g. WI-001).</div>';
+    return;
+  }
+
+  msg.innerHTML = '<span class="spinner"></span> Creating in Planning Center...';
+
+  try {
+    const r = await fetch('/api/people/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ first_name: first, last_name: last, email, phone, form_id: selectedFormId, recorded_by: getRecorderName() }),
+    }).then(r => r.json());
+
+    if (r.error) throw new Error(r.error);
+
+    // Assign WI badge if provided
+    if (badge) {
+      const assignRes = await fetch('/api/badges/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badge_id: badge, person_id: r.person_id }),
+      }).then(r => r.json()).catch(() => ({}));
+      if (assignRes.error) {
+        msg.innerHTML = badgeAssignError(assignRes);
+        return;
+      }
+    }
+
+    // Add to local attendees list
+    attendees.push({
+      submission_id: r.submission_id || null,
+      person_id: r.person_id,
+      name: `${first} ${last}`,
+      first_name: first,
+      last_name: last,
+      created_at: new Date().toISOString(),
+    });
+
+    // Clear form
+    ['reg-badge','reg-first','reg-last','reg-email','reg-phone'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('reg-badge-status').textContent = '';
+
+    const badgeNote = badge ? ` · Badge <strong>${esc(badge)}</strong> linked` : '';
+    msg.innerHTML = `<div class="alert alert-success">
+      <i class="ti ti-check" aria-hidden="true"></i>
+      <strong>${esc(first)} ${esc(last)}</strong> registered${badgeNote}.
+      <a href="#" onclick="showTab('scan');selectAttendee('${r.person_id}','${r.submission_id||''}');return false;"
+         style="color:var(--info-text);margin-left:8px;">Open profile →</a>
+    </div>`;
+
+  } catch(err) {
+    msg.innerHTML = `<div class="alert alert-danger"><i class="ti ti-alert-circle" aria-hidden="true"></i> ${esc(err.message)}</div>`;
+  }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('dash-total').textContent = attendees.length || '—';
+  document.getElementById('dash-fc-count').textContent = attendees.length || '—';
+  document.getElementById('dash-wi-count').textContent = '—';
+
+  const dashList = document.getElementById('dash-list');
+  dashList.innerHTML = '<span class="spinner"></span> Loading notes from PCO...';
+
+  let baptizedPeople = [];
+  let holyGhostPeople = [];
+  let bibleStudyPeople = [];
+  let totalNotes = 0;
+
+  // Fetch notes for all attendees in parallel (batched to avoid hammering API)
+  const batchSize = 10;
+  for (let i = 0; i < attendees.length; i += batchSize) {
+    const batch = attendees.slice(i, i + batchSize);
+    const results = await Promise.all(
+      batch.filter(a => a.person_id).map(a =>
+        fetch(`/api/people/${a.person_id}/notes`)
+          .then(r => r.json())
+          .then(d => ({ attendee: a, notes: d.notes || [] }))
+          .catch(() => ({ attendee: a, notes: [] }))
+      )
+    );
+    for (const { attendee, notes } of results) {
+      totalNotes += notes.length;
+      if (notes.some(n => n.note.includes('[MILESTONE:BAPTIZED]'))) baptizedPeople.push(attendee);
+      if (notes.some(n => n.note.includes('[MILESTONE:HOLYGHOST]'))) holyGhostPeople.push(attendee);
+      if (notes.some(n => n.note.includes('[MILESTONE:BIBLESTUDY]'))) bibleStudyPeople.push(attendee);
+    }
+  }
+
+  document.getElementById('dash-total').textContent = attendees.length;
+  document.getElementById('dash-notes').textContent = totalNotes;
+  document.getElementById('dash-baptized').textContent = baptizedPeople.length;
+  document.getElementById('dash-holy-ghost').textContent = holyGhostPeople.length;
+  document.getElementById('dash-biblestudy').textContent = bibleStudyPeople.length;
+
+  // Badge registration counts
+  // FC = everyone who registered through the form (attendees list)
+  // WI = walk-in badges that have been linked in the badge map
+  document.getElementById('dash-fc-count').textContent = attendees.length;
+  try {
+    const br = await fetch('/api/badges').then(r => r.json());
+    const allBadges = Object.keys(br.badges || {});
+    const wiLinked = allBadges.filter(b => b.startsWith('WI-')).length;
+    document.getElementById('dash-wi-count').textContent = wiLinked;
+  } catch(e) {
+    document.getElementById('dash-wi-count').textContent = '—';
+  }
+
+  // Build milestone list
+  const allMilestone = [];
+  baptizedPeople.forEach(a => allMilestone.push({ ...a, type: 'baptized' }));
+  holyGhostPeople.forEach(a => allMilestone.push({ ...a, type: 'holyghost' }));
+  bibleStudyPeople.forEach(a => allMilestone.push({ ...a, type: 'biblestudy' }));
+  allMilestone.sort((a, b) => (a.last_name||'').localeCompare(b.last_name||''));
+
+  if (!allMilestone.length) {
+    dashList.innerHTML = '<p style="font-size:13px;color:var(--text-faint);padding:10px 0;">No milestones recorded yet.</p>';
+    return;
+  }
+
+  dashList.innerHTML = allMilestone.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border);">
+      <div class="avatar avatar-sm">${initials(a)}</div>
+      <div style="flex:1;">
+        <p style="font-size:14px;font-weight:500;">${esc(a.name)}</p>
+      </div>
+      ${a.type === 'baptized'
+        ? `<span class="badge badge-info"><i class="ti ti-droplet" aria-hidden="true"></i> Baptized in Jesus Name</span>`
+        : a.type === 'holyghost'
+        ? `<span class="badge badge-warn"><i class="ti ti-flame" aria-hidden="true"></i> Filled with the Holy Ghost</span>`
+        : `<span class="badge badge-success"><i class="ti ti-book" aria-hidden="true"></i> Requested Bible Study</span>`}
+    </div>`).join('');
+}
+
+// ── Offline capture ───────────────────────────────────────────────────────────
+async function showOfflineCapture(badgeId) {
+  const panel = document.getElementById('attendee-panel');
+
+  // Check if already has offline data
+  let existing = {};
+  try {
+    const r = await fetch('/api/offline').then(r => r.json());
+    existing = r.captures[badgeId] || {};
+  } catch(e) {}
+
+  const milestones = existing.milestones || [];
+  const hasBaptized = milestones.includes('baptized');
+  const hasHolyGhost = milestones.includes('holyghost');
+  const hasBibleStudy = milestones.includes('biblestudy');
+
+  panel.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div class="avatar" style="background:var(--warning-bg);color:var(--warning-text);">
+          <i class="ti ti-user-question" aria-hidden="true" style="font-size:20px;"></i>
+        </div>
+        <div style="flex:1;">
+          <p style="font-size:17px;font-weight:500;">Badge ${esc(badgeId)}</p>
+          <p style="font-size:12px;color:var(--text-faint);">Not yet linked to a PCO record</p>
+        </div>
+      </div>
+
+      <div style="display:grid;gap:10px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Name</label>
+            <input id="oc-name-${badgeId}" type="text" placeholder="Full name" style="font-size:16px;"
+              value="${esc(existing.name||'')}" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Phone</label>
+            <input id="oc-phone-${badgeId}" type="tel" placeholder="Phone" style="font-size:16px;"
+              value="${esc(existing.phone||'')}" />
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text-faint);display:block;margin-bottom:4px;">Email</label>
+          <input id="oc-email-${badgeId}" type="email" placeholder="Email" style="font-size:16px;"
+            value="${esc(existing.email||'')}" />
+        </div>
+      </div>
+
+      <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px;">
+        <p class="label" style="margin-bottom:10px;">Spiritual milestones</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <button id="oc-btn-baptized-${badgeId}"
+            onclick="toggleOfflineMilestone('${badgeId}','baptized')"
+            data-active="${hasBaptized}"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                   padding:12px 8px;border-radius:var(--radius-lg);text-align:center;
+                   border:0.5px solid var(--border-strong);
+                   background:${hasBaptized ? 'var(--info-bg)' : 'var(--surface)'};
+                   cursor:pointer;font-family:inherit;font-size:12px;
+                   color:${hasBaptized ? 'var(--info-text)' : 'var(--text)'};line-height:1.3;">
+            <i class="ti ti-droplet" aria-hidden="true" style="font-size:20px;color:${hasBaptized ? 'var(--info-text)' : 'var(--text-faint)'};"></i>
+            <span>Baptized in Jesus Name</span>
+          </button>
+          <button id="oc-btn-holyghost-${badgeId}"
+            onclick="toggleOfflineMilestone('${badgeId}','holyghost')"
+            data-active="${hasHolyGhost}"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                   padding:12px 8px;border-radius:var(--radius-lg);text-align:center;
+                   border:0.5px solid var(--border-strong);
+                   background:${hasHolyGhost ? 'var(--warning-bg)' : 'var(--surface)'};
+                   cursor:pointer;font-family:inherit;font-size:12px;
+                   color:${hasHolyGhost ? 'var(--warning-text)' : 'var(--text)'};line-height:1.3;">
+            <i class="ti ti-flame" aria-hidden="true" style="font-size:20px;color:${hasHolyGhost ? 'var(--warning-text)' : 'var(--text-faint)'};"></i>
+            <span>Filled with the Holy Ghost</span>
+          </button>
+          <button id="oc-btn-biblestudy-${badgeId}"
+            onclick="toggleOfflineMilestone('${badgeId}','biblestudy')"
+            data-active="${hasBibleStudy}"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                   padding:12px 8px;border-radius:var(--radius-lg);text-align:center;
+                   border:0.5px solid var(--border-strong);
+                   background:${hasBibleStudy ? 'var(--accent-bg)' : 'var(--surface)'};
+                   cursor:pointer;font-family:inherit;font-size:12px;
+                   color:${hasBibleStudy ? 'var(--accent-text)' : 'var(--text)'};line-height:1.3;">
+            <i class="ti ti-book" aria-hidden="true" style="font-size:20px;color:${hasBibleStudy ? 'var(--accent-text)' : 'var(--text-faint)'};"></i>
+            <span>Requested Bible Study</span>
+          </button>
+        </div>
+      </div>
+
+      <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-bottom:14px;">
+        <p class="label" style="margin-bottom:6px;">Add note</p>
+        <textarea id="oc-note-${badgeId}" rows="2"
+          placeholder="Prayer request, observation..."
+          style="resize:vertical;font-size:16px;margin-bottom:8px;"></textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn" onclick="saveOfflineCapture('${badgeId}')">
+          <i class="ti ti-device-floppy" aria-hidden="true"></i> Save locally
+        </button>
+        <button class="btn-sec" onclick="showTab('walkin');document.getElementById('link-badge-input').value='${badgeId}';checkBadgeStatus();">
+          <i class="ti ti-link" aria-hidden="true"></i> Link to PCO now
+        </button>
+      </div>
+      <div id="oc-msg-${badgeId}" style="margin-top:8px;"></div>
+
+      ${existing.milestones?.length || existing.notes?.length ? `
+      <div style="border-top:0.5px solid var(--border);padding-top:12px;margin-top:14px;">
+        <p class="label" style="margin-bottom:6px;">Saved locally</p>
+        ${(existing.milestones||[]).map(m => `<span class="badge badge-info" style="margin-right:4px;margin-bottom:4px;">${m==='baptized'?'Baptized':m==='holyghost'?'Holy Ghost':'Bible Study'}</span>`).join('')}
+        ${(existing.notes||[]).map(n => `<p style="font-size:12px;color:var(--text-muted);margin-top:4px;">${esc(n.text)}</p>`).join('')}
+      </div>` : ''}
+    </div>`;
+}
+
+async function toggleOfflineMilestone(badgeId, type) {
+  const btn = document.getElementById(`oc-btn-${type}-${badgeId}`);
+  const isActive = btn.dataset.active === 'true';
+  if (isActive) return; // already saved, don't toggle off
+
+  const bgColor = type === 'baptized' ? 'var(--info-bg)' : type === 'holyghost' ? 'var(--warning-bg)' : 'var(--accent-bg)';
+  const textColor = type === 'baptized' ? 'var(--info-text)' : type === 'holyghost' ? 'var(--warning-text)' : 'var(--accent-text)';
+
+  try {
+    await fetch(`/api/offline/${badgeId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ milestone: type })
+    });
+    btn.dataset.active = 'true';
+    btn.style.background = bgColor;
+    btn.style.color = textColor;
+    btn.style.borderColor = textColor;
+    btn.querySelector('i').style.color = textColor;
+  } catch(e) {}
+}
+
+async function saveOfflineCapture(badgeId) {
+  const name = document.getElementById(`oc-name-${badgeId}`).value.trim();
+  const phone = document.getElementById(`oc-phone-${badgeId}`).value.trim();
+  const email = document.getElementById(`oc-email-${badgeId}`).value.trim();
+  const note = document.getElementById(`oc-note-${badgeId}`).value.trim();
+  const msg = document.getElementById(`oc-msg-${badgeId}`);
+
+  msg.innerHTML = '<span class="spinner"></span> Saving...';
+  try {
+    await fetch(`/api/offline/${badgeId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, email, note: note || undefined })
+    });
+    if (note) document.getElementById(`oc-note-${badgeId}`).value = '';
+    msg.innerHTML = `<span class="alert alert-success" style="display:inline-block;padding:6px 12px;font-size:12px;">
+      <i class="ti ti-check" aria-hidden="true"></i> Saved — sync to PCO later in the Link Badge tab</span>`;
+  } catch(e) {
+    msg.innerHTML = `<span class="alert alert-danger" style="display:inline-block;font-size:12px;">${esc(e.message)}</span>`;
+  }
+}
+
+// ── Link badge ────────────────────────────────────────────────────────────────
+let linkSelectedPersonId = null;
+let linkVideoStream = null;
+let linkScanInterval = null;
+
+function resetLinkForm() {
+  document.getElementById('link-badge-input').value = '';
+  document.getElementById('link-person-search').value = '';
+  document.getElementById('link-person-results').innerHTML = '';
+  document.getElementById('link-selected-person').style.display = 'none';
+  document.getElementById('link-badge-status').textContent = '';
+  document.getElementById('link-msg').innerHTML = '';
+  linkSelectedPersonId = null;
+}
+
+async function checkBadgeStatus() {
+  const bid = document.getElementById('link-badge-input').value.trim().toUpperCase();
+  const statusEl = document.getElementById('link-badge-status');
+  if (!bid) { statusEl.textContent = ''; return; }
+  const r = await fetch(`/api/badges/${encodeURIComponent(bid)}`).then(r => r.json());
+  if (r.linked) {
+    statusEl.innerHTML = `<span style="color:var(--warning-text);">⚠ Already linked to PCO ID ${r.person_id}</span>`;
+  } else {
+    statusEl.innerHTML = `<span style="color:var(--accent-text);">✓ Available to link</span>`;
+  }
+}
+
+let linkSearchTimer = null;
+function searchLinkPerson() {
+  clearTimeout(linkSearchTimer);
+  linkSearchTimer = setTimeout(async () => {
+    const q = document.getElementById('link-person-search').value.trim();
+    const results = document.getElementById('link-person-results');
+    if (q.length < 2) { results.innerHTML = ''; return; }
+    results.innerHTML = '<span class="spinner"></span>';
+    try {
+      const d = await fetch(`/api/people/search?q=${encodeURIComponent(q)}`).then(r => r.json());
+      if (!d.people || !d.people.length) {
+        results.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:8px 0;">No one found. Try the Register tab to create them.</p>`;
+        return;
+      }
+      results.innerHTML = d.people.map(p => `
+        <div onclick="selectLinkPerson('${p.id}','${esc(p.name)}')"
+          style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;
+                 border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:4px;background:var(--surface);">
+          <div class="avatar avatar-sm">${((p.first_name[0]||'')+(p.last_name[0]||'')).toUpperCase()}</div>
+          <div>
+            <p style="font-size:14px;font-weight:500;">${esc(p.name)}</p>
+            <p style="font-size:11px;color:var(--text-faint);">PCO ID: ${p.id}</p>
+          </div>
+        </div>`).join('');
+    } catch(err) {
+      results.innerHTML = `<p style="font-size:13px;color:var(--danger-text);">${esc(err.message)}</p>`;
+    }
+  }, 300);
+}
+
+function selectLinkPerson(personId, name) {
+  linkSelectedPersonId = personId;
+  document.getElementById('link-selected-person').style.display = 'block';
+  document.getElementById('link-selected-name').textContent = name;
+  document.getElementById('link-selected-id').textContent = 'PCO ID: ' + personId;
+  document.getElementById('link-person-results').innerHTML = '';
+  document.getElementById('link-person-search').value = '';
+}
+
+async function confirmBadgeLink() {
+  const bid = document.getElementById('link-badge-input').value.trim().toUpperCase();
+  const msg = document.getElementById('link-msg');
+  if (!bid) { msg.innerHTML = '<div class="alert alert-danger">Enter a badge ID first.</div>'; return; }
+  if (!linkSelectedPersonId) { msg.innerHTML = '<div class="alert alert-danger">Select a person first.</div>'; return; }
+  msg.innerHTML = '<span class="spinner"></span> Linking...';
+  try {
+    const r = await fetch('/api/badges/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ badge_id: bid, person_id: linkSelectedPersonId }),
+    }).then(r => r.json());
+    if (r.error) throw new Error(r.error);
+    const name = document.getElementById('link-selected-name').textContent;
+    msg.innerHTML = `<div class="alert alert-success">
+      <i class="ti ti-check" aria-hidden="true"></i>
+      <strong>${esc(bid)}</strong> linked to <strong>${esc(name)}</strong>.
+      <a href="#" onclick="showTab('scan');document.getElementById('scan-input').value='${esc(bid)}';doLookup();return false;"
+         style="color:var(--accent-text);margin-left:6px;">Open profile →</a>
+    </div>`;
+    resetLinkForm();
+    loadLinkedBadges();
+  } catch(err) {
+    msg.innerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
+  }
+}
+
+async function loadLinkedBadges() {
+  const list = document.getElementById('linked-badges-list');
+  list.innerHTML = '<span class="spinner"></span>';
+  try {
+    const r = await fetch('/api/badges').then(r => r.json());
+    const entries = Object.entries(r.badges)
+      .filter(([bid]) => bid.startsWith('WI-'))
+      .sort(([a],[b]) => a.localeCompare(b));
+    if (!entries.length) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-faint);padding:8px 0;">No walk-in badges linked yet.</p>';
+      return;
+    }
+    list.innerHTML = entries.map(([bid, pid]) => {
+      const att = attendees.find(a => a.person_id === pid);
+      const name = att ? att.name : 'PCO ID: ' + pid;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+        <span class="badge badge-info" style="flex-shrink:0;">${esc(bid)}</span>
+        <span style="font-size:14px;flex:1;">${esc(name)}</span>
+        <a href="#" onclick="showTab('scan');document.getElementById('scan-input').value='${esc(bid)}';doLookup();return false;"
+           style="font-size:12px;color:var(--info-text);">View →</a>
+      </div>`;
+    }).join('');
+  } catch(err) {
+    list.innerHTML = `<p style="font-size:13px;color:var(--danger-text);">${esc(err.message)}</p>`;
+  }
+}
+
+async function loadPendingSync() {
+  const list = document.getElementById('pending-sync-list');
+  if (!list) return;
+  list.innerHTML = '<span class="spinner"></span>';
+  try {
+    const r = await fetch('/api/offline').then(r => r.json());
+    const entries = Object.values(r.captures);
+    if (!entries.length) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-faint);padding:6px 0;">No pending captures.</p>';
+      return;
+    }
+    list.innerHTML = entries.map(c => {
+      const milestoneLabels = { baptized: 'Baptized', holyghost: 'Holy Ghost', biblestudy: 'Bible Study' };
+      const mBadges = (c.milestones||[]).map(m =>
+        `<span class="badge badge-info" style="margin-right:3px;">${milestoneLabels[m]||m}</span>`).join('');
+      return `
+      <div style="padding:12px 0;border-bottom:0.5px solid var(--border);">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="flex:1;">
+            <p style="font-size:14px;font-weight:500;">${esc(c.name||'(no name)')}
+              <span class="badge badge-warn" style="margin-left:6px;">${esc(c.badge_id)}</span></p>
+            ${c.phone ? `<p style="font-size:12px;color:var(--text-muted);">${esc(c.phone)}</p>` : ''}
+            ${c.email ? `<p style="font-size:12px;color:var(--text-muted);">${esc(c.email)}</p>` : ''}
+            <div style="margin-top:6px;">${mBadges}</div>
+            ${(c.notes||[]).map(n => `<p style="font-size:12px;color:var(--text-faint);margin-top:3px;">"${esc(n.text)}"</p>`).join('')}
+          </div>
+          <button class="btn" onclick="syncToPC('${c.badge_id}')" 
+            style="font-size:12px;padding:7px 12px;flex-shrink:0;">
+            Push to PCO
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(err) {
+    list.innerHTML = `<p style="font-size:13px;color:var(--danger-text);">${esc(err.message)}</p>`;
+  }
+}
+
+async function syncToPC(badgeId) {
+  const r = await fetch(`/api/offline/${badgeId}/sync`, { method: 'POST' });
+  const d = await r.json();
+  if (d.error) {
+    alert('Sync failed: ' + d.error);
+    return;
+  }
+  // Refresh attendees list and pending list
+  if (selectedFormId) await loadAttendees();
+  loadPendingSync();
+  loadLinkedBadges();
+  alert(`✓ Synced to Planning Center! PCO ID: ${d.person_id}`);
+}
+
+function startLinkCamera() {
+  document.getElementById('link-cam-area').style.display = 'block';
+  const video = document.getElementById('link-qr-video');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      linkVideoStream = stream;
+      video.srcObject = stream;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('muted', '');
+      video.play().catch(() => {});
+      linkScanInterval = setInterval(() => {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        const c = document.createElement('canvas');
+        c.width = video.videoWidth; c.height = video.videoHeight;
+        c.getContext('2d').drawImage(video,0,0);
+        const img = c.getContext('2d').getImageData(0,0,c.width,c.height);
+        const code = jsQR(img.data, img.width, img.height);
+        if (code && code.data) {
+          stopLinkCamera();
+          document.getElementById('link-badge-input').value = code.data.toUpperCase();
+          checkBadgeStatus();
+        }
+      }, 300);
+    })
+    .catch(() => { stopLinkCamera(); alert('Camera access denied.'); });
+}
+
+function stopLinkCamera() {
+  clearInterval(linkScanInterval);
+  if (linkVideoStream) linkVideoStream.getTracks().forEach(t => t.stop());
+  linkVideoStream = null;
+  document.getElementById('link-cam-area').style.display = 'none';
+}
+
+// ── Print badges ──────────────────────────────────────────────────────────────
+function printBadges() {
+  const grid = document.getElementById('print-grid');
+  grid.innerHTML = '';
+  grid.style.display = 'none'; // hidden on screen, shown only via @media print
+
+  const q = (document.getElementById('all-search').value||'').toLowerCase();
+  const list = attendees
+    .filter(a => (a.name||'').toLowerCase().includes(q))
+    .sort((a,b) => {
+      const la = (a.last_name||'').toLowerCase();
+      const lb = (b.last_name||'').toLowerCase();
+      return la.localeCompare(lb);
+    });
+
+  if (!list.length) { alert('No attendees to print.'); grid.style.display='none'; return; }
+
+  // Assign FC- codes in sorted order
+  list.forEach((a, i) => {
+    const fcCode = 'FC-' + String(i + 1).padStart(3, '0');
+    a._badgeCode = fcCode;
+  });
+
+  let pending = list.length;
+
+  list.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'print-badge';
+    div.innerHTML = `
+      <div id="print-qr-${a.person_id}" style="display:flex;justify-content:center;margin-bottom:6px;"></div>
+      <p class="print-badge-name">${esc(a.name)}</p>
+      <p class="print-badge-sub" style="font-size:13px;font-weight:600;color:#333;margin-top:4px;">${a._badgeCode}</p>`;
+    grid.appendChild(div);
+    try {
+      new QRCode(document.getElementById(`print-qr-${a.person_id}`), {
+        text: a._badgeCode, width: 100, height: 100, correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e) {}
+
+    // Also assign in server badge map
+    fetch('/api/badges/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ badge_id: a._badgeCode, person_id: a.person_id })
+    }).catch(() => {});
+
+    pending--;
+    if (pending === 0) {
+      // Wait two animation frames to ensure all QR canvases have rendered
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        window.print();
+        // Hide grid again after print dialog closes
+        setTimeout(() => {
+          grid.style.display = 'none';
+          grid.innerHTML = '';
+        }, 1000);
+      }));
+    }
+  });
+}
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+function toggleCamera() {
+  document.getElementById('cam-area').style.display === 'none' ? startCamera() : stopCamera();
+}
+
+function startCamera() {
+  document.getElementById('cam-area').style.display = 'block';
+  const video = document.getElementById('qr-video');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      videoStream = stream;
+      video.srcObject = stream;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('muted', '');
+      video.play().catch(() => {});
+      scanInterval = setInterval(() => {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        const c = document.createElement('canvas');
+        c.width = video.videoWidth; c.height = video.videoHeight;
+        c.getContext('2d').drawImage(video,0,0);
+        const img = c.getContext('2d').getImageData(0,0,c.width,c.height);
+        const code = jsQR(img.data, img.width, img.height);
+        if (code && code.data) { stopCamera(); document.getElementById('scan-input').value=code.data; doLookup(); }
+      }, 300);
+    })
+    .catch(() => { stopCamera(); alert('Camera access denied. Type a name to search instead.'); });
+}
+
+function stopCamera() {
+  clearInterval(scanInterval);
+  if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+  videoStream = null;
+  document.getElementById('cam-area').style.display = 'none';
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function initials(a) {
+  const f = a.first_name||(a.name||'').split(' ')[0]||'';
+  const l = a.last_name||(a.name||'').split(' ').slice(-1)[0]||'';
+  return ((f[0]||'')+(l[0]||'')).toUpperCase()||'?';
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+boot();
+</script>
+<footer style="text-align:center;padding:2rem 1rem 2rem;border-top:0.5px solid var(--border);margin-top:1rem;">
+<svg height="28" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
+    <rect width="200" height="200" rx="44" fill="#0D1117"/>
+    <path d="M72 68L114 100L72 132" stroke="#00C9A7" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.3"/>
+    <path d="M94 68L136 100L94 132" stroke="#00C9A7" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <a href="/status.html"
+    style="display:inline-flex;align-items:center;gap:6px;font-size:12px;
+           color:var(--text-muted);background:var(--surface);
+           border:0.5px solid var(--border-strong);border-radius:var(--radius);
+           padding:6px 14px;text-decoration:none;margin-bottom:12px;">
+    <i class="ti ti-activity-heartbeat" aria-hidden="true"></i>
+    System Status
+  </a>
+  <p style="font-size:11px;color:var(--text-faint);">Made with care by Logan VanDyke</p>
+</footer>
+</body>
+</html>
